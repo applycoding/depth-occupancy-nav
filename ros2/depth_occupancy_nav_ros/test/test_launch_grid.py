@@ -40,6 +40,7 @@ from rclpy.qos import (
 )
 
 from depth_occupancy_nav_ros.grid_checks import assert_criterion5_grid, occupancy_counts
+from conftest import spin_create_node
 
 MAP_QOS = QoSProfile(
     depth=1,
@@ -124,7 +125,7 @@ def launch_description_bad_from_start() -> LaunchDescription:
 
 
 def _wait_for_map(timeout: float = 30.0) -> OccupancyGrid:
-    node = RclpyNode("launch_test_a_client")
+    node = spin_create_node("launch_test_a_client")
     holder: list[OccupancyGrid] = []
 
     def cb(msg: OccupancyGrid) -> None:
@@ -153,7 +154,7 @@ def test_launch_a_valid_camera_matches_criterion5() -> None:
 
 @pytest.mark.launch(fixture=launch_description_bad_ci)
 def test_launch_a_bad_camera_info_does_not_mutate_grid() -> None:
-    node = RclpyNode("launch_test_a_bad_ci")
+    node = spin_create_node("launch_test_a_bad_ci")
     good: list[OccupancyGrid] = []
     all_msgs: list[OccupancyGrid] = []
 
@@ -185,7 +186,7 @@ def test_launch_a_bad_camera_info_does_not_mutate_grid() -> None:
 
 @pytest.mark.launch(fixture=launch_description_bad_from_start)
 def test_launch_a_bad_camera_from_start_never_updates_grid() -> None:
-    node = RclpyNode("launch_test_a_bad_from_start")
+    node = spin_create_node("launch_test_a_bad_from_start")
     msgs: list[OccupancyGrid] = []
 
     def cb(msg: OccupancyGrid) -> None:

@@ -22,12 +22,27 @@ from pathlib import Path
 
 import pytest
 
+try:
+    import rclpy
+except ImportError:
+    rclpy = None  # type: ignore[assignment]
+
 _ROOT = Path(__file__).resolve().parents[2].parent
 _SRC = _ROOT / "src"
 _PKG = Path(__file__).resolve().parents[1]
 for p in (str(_SRC), str(_PKG)):
     if p not in sys.path:
         sys.path.insert(0, p)
+
+
+def spin_create_node(name: str):
+    if rclpy is None:
+        raise RuntimeError("rclpy not installed")
+    if not rclpy.ok():
+        rclpy.init()
+    from rclpy.node import Node
+
+    return Node(name)
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:

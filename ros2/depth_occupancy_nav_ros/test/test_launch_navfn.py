@@ -40,6 +40,8 @@ from rclpy.node import Node as RclpyNode
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
 
 from depth_occupancy_nav.grid import ORIGIN_X, ORIGIN_Y, RESOLUTION
+from conftest import spin_create_node
+
 from depth_occupancy_nav_ros.grid_checks import (
     assert_path_poses_in_bounds,
     assert_path_samples_free,
@@ -214,7 +216,7 @@ def _plan_to(
 
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_global_costmap_matches_map() -> None:
-    node = RclpyNode("launch_test_b_costmap")
+    node = spin_create_node("launch_test_b_costmap")
     _wait_for_locked_map(node, 45.0)
     costmap = _wait_for_global_costmap(node, 60.0)
     _assert_locked_costmap_probes(costmap)
@@ -223,7 +225,7 @@ def test_launch_b_global_costmap_matches_map() -> None:
 
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_navfn_negative_goals() -> None:
-    node = RclpyNode("launch_test_b_negative")
+    node = spin_create_node("launch_test_b_negative")
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
     _wait_for_locked_map(node, 45.0)
     _wait_for_global_costmap(node, 60.0)
@@ -244,7 +246,7 @@ def test_launch_b_navfn_negative_goals() -> None:
 
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_navfn_around_path() -> None:
-    node = RclpyNode("launch_test_b_client")
+    node = spin_create_node("launch_test_b_client")
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
 
     map_msg = _wait_for_locked_map(node, 45.0)
