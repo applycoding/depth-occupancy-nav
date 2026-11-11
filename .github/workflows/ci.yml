@@ -178,7 +178,7 @@ jobs:
               dpkg-query -W > /ws/apt-versions.txt
               python3 /ws/get-pip.py --break-system-packages
               python3 -m pip install -q --break-system-packages --no-index -f /ws/wheelhouse \
-                --ignore-installed numpy==2.5.4 pillow==13.0.0
+                --ignore-installed numpy==2.5.4 pillow==13.0.0 pytest==9.2.0
               export PYTHONPATH="/ws/src:${PYTHONPATH:-}"
               cd /ws/ros2/depth_occupancy_nav_ros
               colcon build --packages-select depth_occupancy_nav_ros
