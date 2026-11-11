@@ -14,6 +14,7 @@ UNICODE_DASHES = ("\u2014", "\u2013", "\u2212")
 
 EXCLUDE_RE = re.compile(
     r"^\.github/workflows/ci\.yml$|"
+    r"^\.github/legacy-trailer-shas\.txt$|"
     r"scripts/check_authorship\.py$|"
     r"package-lock\.json$|"
     r"\.png$|^LICENSE$|"
