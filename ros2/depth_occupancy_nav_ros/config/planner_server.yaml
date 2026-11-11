@@ -35,4 +35,5 @@ global_costmap:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: true
         map_topic: map
+        subscribe_to_updates: true
       always_send_full_costmap: true

@@ -76,6 +76,8 @@ class DepthOccupancyNode(Node):
         if camera_info_valid(msg):
             self._camera_info = msg
             self._camera_ok = True
+            if self._last_map is None:
+                self._publish_map()
         else:
             self._camera_info = None
             self._camera_ok = False
