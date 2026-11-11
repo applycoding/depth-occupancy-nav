@@ -131,8 +131,10 @@ jobs:
           IMAGE="ros:jazzy-ros-base@sha256:8eed0a4669bbf43ee331878a4c39bd8ebddea8e3312a58b4fae8edb14526b617"
           docker run --rm --init --platform linux/amd64 \
             -v "$GITHUB_WORKSPACE:/ws" -w /ws "$IMAGE" bash -lc '
-              set -euo pipefail
+              set -eo pipefail
+              set +u
               source /opt/ros/jazzy/setup.bash
+              set -u
               apt-get update -qq
               DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
                 python3-pip ros-jazzy-nav2-navfn-planner ros-jazzy-nav2-planner \
@@ -170,7 +172,7 @@ jobs:
           npm run typecheck
           npm test
           npm run build
-          npx playwright install --with-deps chromium
+          npx playwright install chromium || npx playwright install --with-deps chromium
           npm run test:e2e
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
