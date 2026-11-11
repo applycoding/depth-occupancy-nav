@@ -23,6 +23,7 @@ from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPo
 from sensor_msgs.msg import CameraInfo, Image
 
 from depth_occupancy_nav.camera import H, W
+from depth_occupancy_nav.noise import add_depth_noise
 from depth_occupancy_nav.render import render_depth
 
 from depth_occupancy_nav_ros.camera_contract import (
@@ -47,6 +48,8 @@ class LockedScenePublisher(Node):
         self.declare_parameter("publish_rate_hz", 5.0)
         self.declare_parameter("bad_camera_info", False)
         self.declare_parameter("bad_camera_info_after", 0)
+        self.declare_parameter("bad_camera_from_start", False)
+        self.declare_parameter("publish_noisy_depth_with_bad_ci", False)
 
         frame_id = self.get_parameter("frame_id").get_parameter_value().string_value
         depth_topic = self.get_parameter("depth_topic").get_parameter_value().string_value
@@ -55,9 +58,19 @@ class LockedScenePublisher(Node):
         )
         rate = self.get_parameter("publish_rate_hz").get_parameter_value().double_value
         self._bad = self.get_parameter("bad_camera_info").get_parameter_value().bool_value
+        self._bad_from_start = (
+            self.get_parameter("bad_camera_from_start").get_parameter_value().bool_value
+        )
         self._bad_after = (
             self.get_parameter("bad_camera_info_after").get_parameter_value().integer_value
         )
+        self._publish_noisy_bad_ci = (
+            self.get_parameter("publish_noisy_depth_with_bad_ci")
+            .get_parameter_value()
+            .bool_value
+        )
+        if self._bad_from_start:
+            self._bad = True
 
         depth_np, _ = render_depth()
         self._depth_f32 = depth_np.astype(np.float32)
@@ -75,11 +88,23 @@ class LockedScenePublisher(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         return msg
 
+    def _depth_payload(self) -> np.ndarray:
+        use_noisy = (
+            self._publish_noisy_bad_ci
+            and self._bad_after > 0
+            and self._tick >= self._bad_after
+        )
+        if use_noisy:
+            noisy = add_depth_noise(self._depth_f32.astype(np.float64), seed=1)
+            return noisy.astype(np.float32)
+        return self._depth_f32
+
     def _publish(self) -> None:
         self._tick += 1
         ci = self._camera_info()
         self._ci_pub.publish(ci)
 
+        depth = self._depth_payload()
         img = Image()
         img.header.stamp = ci.header.stamp
         img.header.frame_id = self._frame_id
@@ -88,7 +113,7 @@ class LockedScenePublisher(Node):
         img.encoding = "32FC1"
         img.is_bigendian = 0
         img.step = W * 4
-        img.data = self._depth_f32.tobytes(order="C")
+        img.data = depth.tobytes(order="C")
         self._depth_pub.publish(img)
 
 

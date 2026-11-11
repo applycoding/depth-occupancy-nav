@@ -15,6 +15,8 @@
 from pathlib import Path
 
 import pytest
+
+pytest.importorskip("ament_copyright")
 from ament_copyright.main import main
 
 

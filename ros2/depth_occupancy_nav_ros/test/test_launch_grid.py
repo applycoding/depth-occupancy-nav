@@ -19,9 +19,11 @@ from __future__ import annotations
 import os
 import time
 
+import pytest
+
+pytest.importorskip("launch_pytest")
 import launch_pytest
 import launch_testing.actions
-import pytest
 import rclpy
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
@@ -52,14 +54,22 @@ def _pkg_share() -> str:
     return get_package_share_directory("depth_occupancy_nav_ros")
 
 
-def _stack_launch(run_publisher: str, bad_after: str) -> IncludeLaunchDescription:
+def _stack_launch(
+    run_publisher: str,
+    bad_after: str = "0",
+    **extra: str,
+) -> IncludeLaunchDescription:
     launch_dir = os.path.join(_pkg_share(), "launch")
+    args = {
+        "run_publisher": run_publisher,
+        "bad_camera_info_after": bad_after,
+        "bad_camera_from_start": "false",
+        "publish_noisy_depth_with_bad_ci": "false",
+    }
+    args.update(extra)
     return IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(launch_dir, "depth_occupancy.launch.py")),
-        launch_arguments={
-            "run_publisher": run_publisher,
-            "bad_camera_info_after": bad_after,
-        }.items(),
+        launch_arguments=args.items(),
     )
 
 
@@ -87,7 +97,26 @@ def launch_description_bad_ci() -> LaunchDescription:
     return LaunchDescription(
         [
             tf,
-            _stack_launch("true", "5"),
+            _stack_launch(
+                "true",
+                "5",
+                publish_noisy_depth_with_bad_ci="true",
+            ),
+            launch_testing.actions.ReadyToTest(),
+        ]
+    )
+
+
+@launch_pytest.fixture
+def launch_description_bad_from_start() -> LaunchDescription:
+    launch_dir = os.path.join(_pkg_share(), "launch")
+    tf = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(launch_dir, "static_tf.launch.py"))
+    )
+    return LaunchDescription(
+        [
+            tf,
+            _stack_launch("true", bad_camera_from_start="true"),
             launch_testing.actions.ReadyToTest(),
         ]
     )
@@ -153,6 +182,29 @@ def test_launch_a_bad_camera_info_does_not_mutate_grid() -> None:
 
     for msg in all_msgs[len(good) :]:
         assert list(msg.data) == baseline, "Grid mutated after bad CameraInfo"
+
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+@pytest.mark.launch(fixture=launch_description_bad_from_start)
+def test_launch_a_bad_camera_from_start_never_updates_grid() -> None:
+    rclpy.init()
+    node = RclpyNode("launch_test_a_bad_from_start")
+    msgs: list[OccupancyGrid] = []
+
+    def cb(msg: OccupancyGrid) -> None:
+        if msg.info.width == 80 and msg.info.height == 60:
+            msgs.append(msg)
+
+    node.create_subscription(OccupancyGrid, "map", cb, MAP_QOS)
+    deadline = time.monotonic() + 10.0
+    while time.monotonic() < deadline:
+        rclpy.spin_once(node, timeout_sec=0.1)
+
+    assert msgs, "Expected at least one OccupancyGrid publication"
+    for msg in msgs:
+        assert all(v == -1 for v in msg.data), "Grid mutated with bad CameraInfo from start"
 
     node.destroy_node()
     rclpy.shutdown()

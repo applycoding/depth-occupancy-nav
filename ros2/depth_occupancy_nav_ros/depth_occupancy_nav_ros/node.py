@@ -91,7 +91,13 @@ class DepthOccupancyNode(Node):
             return
         if msg.header.frame_id != self._camera_info.header.frame_id:
             return
-        if not self._depth_image_valid(msg):
+        if msg.width != self._camera_info.width or msg.height != self._camera_info.height:
+            self.get_logger().warn(
+                "Rejected depth Image (size mismatch with CameraInfo)",
+                throttle_duration_sec=2.0,
+            )
+            return
+        if not depth_image_format_valid(msg):
             self.get_logger().warn("Rejected depth Image", throttle_duration_sec=2.0)
             return
 
@@ -101,16 +107,6 @@ class DepthOccupancyNode(Node):
 
         self._grid = update_grid_from_depth(depth, grid=self._grid)
         self._publish_map()
-
-    @staticmethod
-    def _depth_image_valid(msg: Image) -> bool:
-        if msg.encoding != "32FC1":
-            return False
-        if msg.is_bigendian != 0:
-            return False
-        if msg.step != msg.width * 4:
-            return False
-        return True
 
     def _decode_depth(self, msg: Image) -> np.ndarray | None:
         expected = msg.height * msg.width
@@ -159,6 +155,25 @@ def main() -> None:
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
+
+def depth_image_format_valid(msg: Image) -> bool:
+    """Return True iff the Image encoding matches the locked 32FC1 little-endian contract."""
+    if msg.encoding != "32FC1":
+        return False
+    if msg.is_bigendian != 0:
+        return False
+    if msg.step != msg.width * 4:
+        return False
+    return True
+
+
+def depth_payload_size_valid(msg: Image) -> bool:
+    """Return True iff data holds width*height float32 values."""
+    expected = msg.height * msg.width
+    if expected <= 0:
+        return False
+    return len(msg.data) == expected * 4
 
 
 if __name__ == "__main__":

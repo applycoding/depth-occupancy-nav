@@ -20,9 +20,11 @@ import math
 import os
 import time
 
+import pytest
+
+pytest.importorskip("launch_pytest")
 import launch_pytest
 import launch_testing.actions
-import pytest
 import rclpy
 from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped
@@ -40,6 +42,7 @@ from depth_occupancy_nav.grid import ORIGIN_X, ORIGIN_Y, RESOLUTION
 from depth_occupancy_nav_ros.grid_checks import (
     assert_path_poses_in_bounds,
     assert_path_samples_free,
+    grid_value_at_world,
     occupancy_counts,
 )
 
@@ -51,8 +54,15 @@ MAP_QOS = QoSProfile(
 )
 
 START = (0.50, 0.00)
-GOAL = (5.50, -1.50)
+GOAL_AROUND = (5.50, -1.50)
+GOAL_SHADOW = (5.50, 0.00)
+GOAL_FACE = (2.75, 0.00)
 POSE_TOL = 0.15
+
+# nav2_msgs/action/ComputePathToPose.action result codes (Nav2 1.3.x)
+ERR_NONE = 0
+ERR_NO_VALID_PATH = 208
+ERR_GOAL_OCCUPIED = 206
 
 
 def _pkg_share() -> str:
@@ -116,6 +126,43 @@ def _wait_for_locked_map(node: RclpyNode, timeout: float) -> OccupancyGrid:
     raise AssertionError("Locked /map not received")
 
 
+def _wait_for_global_costmap(node: RclpyNode, timeout: float) -> OccupancyGrid:
+    holder: list[OccupancyGrid] = []
+
+    def cb(msg: OccupancyGrid) -> None:
+        if msg.info.width > 0 and msg.info.height > 0:
+            holder.append(msg)
+
+    node.create_subscription(OccupancyGrid, "global_costmap/costmap", cb, MAP_QOS)
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < timeout:
+        rclpy.spin_once(node, timeout_sec=0.1)
+        if not holder:
+            continue
+        msg = holder[-1]
+        if (
+            msg.info.width == 80
+            and msg.info.height == 60
+            and abs(msg.info.resolution - 0.1) < 1e-6
+            and abs(msg.info.origin.position.x - (-1.0)) < 1e-6
+            and abs(msg.info.origin.position.y - (-3.0)) < 1e-6
+            and occupancy_counts(msg).get("occupied", 0) >= 1
+        ):
+            return msg
+    raise AssertionError("global_costmap/costmap not populated with locked grid")
+
+
+def _assert_locked_costmap_probes(costmap: OccupancyGrid) -> None:
+    probes = {
+        (2.75, 0.0): 100,
+        (2.95, 0.0): -1,
+        (5.5, -1.5): 0,
+    }
+    for (x, y), want in probes.items():
+        got = grid_value_at_world(costmap, x, y)
+        assert got == want, f"costmap probe ({x}, {y}) expected {want}, got {got}"
+
+
 def _pose(x: float, y: float) -> PoseStamped:
     msg = PoseStamped()
     msg.header.frame_id = "map"
@@ -129,17 +176,9 @@ def _dist(a: tuple[float, float], b: tuple[float, float]) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
-@pytest.mark.launch(fixture=launch_description_navfn)
-def test_launch_b_navfn_around_path() -> None:
-    rclpy.init()
-    node = RclpyNode("launch_test_b_client")
-    client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
-
-    map_msg = _wait_for_locked_map(node, 45.0)
-    assert client.wait_for_server(timeout_sec=90.0), "compute_path_to_pose action missing"
-
-    # Extra time for planner_server (4s delayed start) + static costmap ingest.
-    deadline = time.monotonic() + 35.0
+def _wait_for_action(node: RclpyNode, client: ActionClient, timeout: float) -> None:
+    assert client.wait_for_server(timeout_sec=timeout), "compute_path_to_pose action missing"
+    deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         rclpy.spin_once(node, timeout_sec=0.2)
         if client.server_is_ready():
@@ -148,25 +187,77 @@ def test_launch_b_navfn_around_path() -> None:
     while time.monotonic() < settle:
         rclpy.spin_once(node, timeout_sec=0.2)
 
-    goal = ComputePathToPose.Goal()
-    stamp = node.get_clock().now().to_msg()
-    goal.use_start = True
-    goal.start = _pose(*START)
-    goal.start.header.stamp = stamp
-    goal.goal = _pose(*GOAL)
-    goal.goal.header.stamp = stamp
-    goal.planner_id = "GridBased"
 
-    future = client.send_goal_async(goal)
+def _plan_to(
+    node: RclpyNode, client: ActionClient, start: tuple[float, float], goal: tuple[float, float]
+) -> tuple[int, int, ComputePathToPose.Result]:
+    stamp = node.get_clock().now().to_msg()
+    req = ComputePathToPose.Goal()
+    req.use_start = True
+    req.start = _pose(*start)
+    req.start.header.stamp = stamp
+    req.goal = _pose(*goal)
+    req.goal.header.stamp = stamp
+    req.planner_id = "GridBased"
+
+    future = client.send_goal_async(req)
     rclpy.spin_until_future_complete(node, future, timeout_sec=60.0)
     goal_handle = future.result()
     assert goal_handle is not None and goal_handle.accepted
 
     result_future = goal_handle.get_result_async()
     rclpy.spin_until_future_complete(node, result_future, timeout_sec=60.0)
-    result = result_future.result().result
-    assert goal_handle.status == GoalStatus.STATUS_SUCCEEDED
-    assert result.error_code == 0, f"planner error_code {result.error_code}"
+    result_wrap = result_future.result()
+    return goal_handle.status, result_wrap.result.error_code, result_wrap.result
+
+
+@pytest.mark.launch(fixture=launch_description_navfn)
+def test_launch_b_global_costmap_matches_map() -> None:
+    rclpy.init()
+    node = RclpyNode("launch_test_b_costmap")
+    _wait_for_locked_map(node, 45.0)
+    costmap = _wait_for_global_costmap(node, 60.0)
+    _assert_locked_costmap_probes(costmap)
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+@pytest.mark.launch(fixture=launch_description_navfn)
+def test_launch_b_navfn_negative_goals() -> None:
+    rclpy.init()
+    node = RclpyNode("launch_test_b_negative")
+    client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
+    _wait_for_locked_map(node, 45.0)
+    _wait_for_global_costmap(node, 60.0)
+    _wait_for_action(node, client, 90.0)
+
+    shadow_status, shadow_code, shadow_result = _plan_to(node, client, START, GOAL_SHADOW)
+    assert shadow_status != GoalStatus.STATUS_SUCCEEDED
+    assert shadow_code == ERR_NO_VALID_PATH, shadow_result.error_msg
+    assert len(shadow_result.path.poses) == 0
+
+    face_status, face_code, face_result = _plan_to(node, client, START, GOAL_FACE)
+    assert face_status != GoalStatus.STATUS_SUCCEEDED
+    assert face_code == ERR_GOAL_OCCUPIED, face_result.error_msg
+    assert len(face_result.path.poses) == 0
+
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+@pytest.mark.launch(fixture=launch_description_navfn)
+def test_launch_b_navfn_around_path() -> None:
+    rclpy.init()
+    node = RclpyNode("launch_test_b_client")
+    client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
+
+    map_msg = _wait_for_locked_map(node, 45.0)
+    _wait_for_global_costmap(node, 60.0)
+    _wait_for_action(node, client, 90.0)
+
+    status, error_code, result = _plan_to(node, client, START, GOAL_AROUND)
+    assert status == GoalStatus.STATUS_SUCCEEDED
+    assert error_code == ERR_NONE, f"planner error_code {error_code}"
 
     path = result.path
     assert len(path.poses) >= 2, "Empty or trivial path"
@@ -177,7 +268,7 @@ def test_launch_b_navfn_around_path() -> None:
     p0 = path.poses[0].pose.position
     p1 = path.poses[-1].pose.position
     assert _dist((p0.x, p0.y), START) <= POSE_TOL
-    assert _dist((p1.x, p1.y), GOAL) <= POSE_TOL
+    assert _dist((p1.x, p1.y), GOAL_AROUND) <= POSE_TOL
 
     node.destroy_node()
     rclpy.shutdown()

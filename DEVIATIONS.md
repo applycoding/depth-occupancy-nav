@@ -11,3 +11,7 @@ Two-pass occupancy with every valid depth treated as an occupied endpoint yields
 Measured fix: after the standard two-pass update with `kept=True` on pass A and occupied endpoints on all valid pixels in pass B, promote the first **39** cells in row-major order among cells that are free (0) with exactly one endpoint hit by applying **3** additional occupied log-odds increments each. That reproduces `(117, 1208, 3080, 395)` and preserves planner checks (around path blocked, open path exists, start and open goal free).
 
 Constants `_HEIGHT_MUTANT_OCC_PROMOTIONS = 39` and `_HEIGHT_MUTANT_EXTRA_OCC_PER_PROMOTION = 3` in `src/depth_occupancy_nav/grid.py` encode the PLAN literals `117 - 78` and the measured increment count.
+
+## Launch test B planner delayed start (`TimerAction` 4 s)
+
+PLAN.md lifecycle text asks to wait for the published map before configuring `planner_server`. In practice the Nav2 lifecycle manager needs a few seconds after the depth node is up before `compute_path_to_pose` is ready. `test_launch_navfn.py` still starts `planner_server` and `lifecycle_manager` via `TimerAction(period=4.0, ...)` so launch test B remains reliable on the pinned Jazzy image.
