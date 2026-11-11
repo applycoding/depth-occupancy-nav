@@ -214,18 +214,15 @@ def _plan_to(
 
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_global_costmap_matches_map() -> None:
-    rclpy.init()
     node = RclpyNode("launch_test_b_costmap")
     _wait_for_locked_map(node, 45.0)
     costmap = _wait_for_global_costmap(node, 60.0)
     _assert_locked_costmap_probes(costmap)
     node.destroy_node()
-    rclpy.shutdown()
 
 
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_navfn_negative_goals() -> None:
-    rclpy.init()
     node = RclpyNode("launch_test_b_negative")
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
     _wait_for_locked_map(node, 45.0)
@@ -243,12 +240,10 @@ def test_launch_b_navfn_negative_goals() -> None:
     assert len(face_result.path.poses) == 0
 
     node.destroy_node()
-    rclpy.shutdown()
 
 
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_navfn_around_path() -> None:
-    rclpy.init()
     node = RclpyNode("launch_test_b_client")
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
 
@@ -272,4 +267,3 @@ def test_launch_b_navfn_around_path() -> None:
     assert _dist((p1.x, p1.y), GOAL_AROUND) <= POSE_TOL
 
     node.destroy_node()
-    rclpy.shutdown()

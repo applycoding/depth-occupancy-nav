@@ -61,14 +61,9 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/check_authorship.py --self-test
-          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-            sha=$(jq -r .pull_request.head.sha "$GITHUB_EVENT_PATH")
-            base=$(git merge-base origin/main "$sha")
-            python3 scripts/check_authorship.py "${base}..${sha}" "5fcad2927246fa08150c0db116438e3c9f20a0d3..${sha}"
-          else
-            sha=$(git rev-parse HEAD)
-            python3 scripts/check_authorship.py "$sha" "5fcad2927246fa08150c0db116438e3c9f20a0d3..${sha}"
-          fi
+          sha=$(git rev-parse HEAD)
+          new_range="5fcad2927246fa08150c0db116438e3c9f20a0d3..${sha}"
+          python3 scripts/check_authorship.py "${new_range}" "${new_range}"
       - name: Action pin check
         run: |
           python << 'PY'
