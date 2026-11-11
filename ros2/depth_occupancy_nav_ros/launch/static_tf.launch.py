@@ -19,6 +19,29 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description() -> LaunchDescription:
+    world_map = Node(
+        package="tf2_ros",
+        executable="static_transform_publisher",
+        name="world_to_map_tf",
+        arguments=[
+            "--x",
+            "0",
+            "--y",
+            "0",
+            "--z",
+            "0",
+            "--roll",
+            "0",
+            "--pitch",
+            "0",
+            "--yaw",
+            "0",
+            "--frame-id",
+            "world",
+            "--child-frame-id",
+            "map",
+        ],
+    )
     camera_tf = Node(
         package="tf2_ros",
         executable="static_transform_publisher",
@@ -67,4 +90,4 @@ def generate_launch_description() -> LaunchDescription:
             "base_link",
         ],
     )
-    return LaunchDescription([camera_tf, base_tf])
+    return LaunchDescription([world_map, camera_tf, base_tf])

@@ -133,9 +133,9 @@ def _dist(a: tuple[float, float], b: tuple[float, float]) -> float:
 def test_launch_b_navfn_around_path() -> None:
     rclpy.init()
     node = RclpyNode("launch_test_b_client")
-    map_msg = _wait_for_locked_map(node, 45.0)
-
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
+
+    map_msg = _wait_for_locked_map(node, 45.0)
     assert client.wait_for_server(timeout_sec=90.0), "compute_path_to_pose action missing"
 
     # Extra time for planner_server (4s delayed start) + static costmap ingest.
