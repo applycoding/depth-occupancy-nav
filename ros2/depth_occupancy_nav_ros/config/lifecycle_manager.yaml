@@ -1,0 +1,7 @@
+lifecycle_manager:
+  ros__parameters:
+    use_sim_time: false
+    autostart: true
+    bond_timeout: 4.0
+    attempt_respawn_reconnection: false
+    node_names: ["planner_server"]
