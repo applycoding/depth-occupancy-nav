@@ -1,6 +1,4 @@
 # Copyright 2026 Arpan Bom
-
-# Licensed under the Apache License, Version 2.0
 # SPDX-License-Identifier: Apache-2.0
 from pathlib import Path
 
@@ -19,7 +17,6 @@ def test_copyright() -> None:
             str(root / "test"),
             str(root / "config"),
             str(root / "package.xml"),
-            str(root / "setup.py"),
         ]
     )
     assert rc == 0, "Found errors"

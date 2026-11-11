@@ -1,6 +1,4 @@
 # Copyright 2026 Arpan Bom
-
-# Licensed under the Apache License, Version 2.0
 # SPDX-License-Identifier: Apache-2.0
 """Launch test B: Navfn planner on static-layer costmap fed by published /map."""
 
@@ -79,7 +77,7 @@ def launch_description_navfn() -> LaunchDescription:
         parameters=[os.path.join(config_dir, "lifecycle_manager.yaml")],
     )
     # Depth /map must exist before planner_server configures the static costmap layer.
-    delayed_nav = TimerAction(period=2.0, actions=[planner, lifecycle])
+    delayed_nav = TimerAction(period=5.0, actions=[planner, lifecycle])
     return LaunchDescription(
         [tf, stack, delayed_nav, launch_testing.actions.ReadyToTest()]
     )

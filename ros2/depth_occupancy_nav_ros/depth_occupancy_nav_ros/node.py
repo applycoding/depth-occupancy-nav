@@ -1,6 +1,4 @@
 # Copyright 2026 Arpan Bom
-
-# Licensed under the Apache License, Version 2.0
 # SPDX-License-Identifier: Apache-2.0
 """Subscribe to 32FC1 depth + CameraInfo; publish nav_msgs/OccupancyGrid on /map."""
 
@@ -55,8 +53,11 @@ class DepthOccupancyNode(Node):
         )
 
         self._map_pub = self.create_publisher(OccupancyGrid, map_topic, MAP_QOS)
+        self._last_map: OccupancyGrid | None = None
         self.create_subscription(Image, depth_topic, self._on_depth, 10)
         self.create_subscription(CameraInfo, ci_topic, self._on_camera_info, 10)
+        # Keep Nav2 static costmap subscriptions fed after the latched map is built.
+        self.create_timer(1.0, self._republish_map)
         self.get_logger().info("depth_occupancy_nav node ready (simulation only)")
 
     def _on_camera_info(self, msg: CameraInfo) -> None:
@@ -85,7 +86,7 @@ class DepthOccupancyNode(Node):
             return
 
         self._grid = update_grid_from_depth(depth, grid=self._grid)
-        self._map_pub.publish(self._grid_to_occupancy_grid())
+        self._publish_map()
 
     @staticmethod
     def _depth_image_valid(msg: Image) -> bool:
@@ -108,6 +109,16 @@ class DepthOccupancyNode(Node):
         valid = np.isfinite(depth) & (depth > 0.0) & (depth <= MAX_RANGE)
         out = np.where(valid, depth, 0.0)
         return out
+
+    def _publish_map(self) -> None:
+        msg = self._grid_to_occupancy_grid()
+        self._last_map = msg
+        self._map_pub.publish(msg)
+
+    def _republish_map(self) -> None:
+        if self._last_map is not None:
+            self._last_map.header.stamp = self.get_clock().now().to_msg()
+            self._map_pub.publish(self._last_map)
 
     def _grid_to_occupancy_grid(self) -> OccupancyGrid:
         msg = OccupancyGrid()

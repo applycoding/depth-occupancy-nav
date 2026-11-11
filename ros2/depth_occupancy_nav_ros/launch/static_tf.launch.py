@@ -1,6 +1,4 @@
 # Copyright 2026 Arpan Bom
-
-# Licensed under the Apache License, Version 2.0
 # SPDX-License-Identifier: Apache-2.0
 """Static transforms for locked map / base_link / camera_optical_frame."""
 
@@ -29,6 +27,6 @@ def generate_launch_description() -> LaunchDescription:
         package="tf2_ros",
         executable="static_transform_publisher",
         name="map_to_base_link_tf",
-        arguments=["0", "0", "0", "0", "0", "0", "1", "map", "base_link"],
+        arguments=["0.5", "0", "0", "0", "0", "0", "1", "map", "base_link"],
     )
     return LaunchDescription([camera_tf, base_tf])
