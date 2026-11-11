@@ -40,6 +40,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from nav2_msgs.action import ComputePathToPose
 from nav_msgs.msg import OccupancyGrid
+from rcl_interfaces.msg import Log
 from rclpy.action import ActionClient
 from rclpy.node import Node as RclpyNode
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
@@ -185,6 +186,33 @@ def _wait_for_action(node: RclpyNode, client: ActionClient, timeout: float) -> N
         rclpy.spin_once(node, timeout_sec=0.2)
 
 
+class _PlannerRosoutCapture:
+    def __init__(self) -> None:
+        self.lines: list[str] = []
+
+    def cb(self, msg: Log) -> None:
+        if msg.name != "planner_server":
+            return
+        if msg.level < Log.WARN:
+            return
+        text = (msg.msg or "").strip()
+        if text:
+            self.lines.append(text)
+
+    def clear(self) -> None:
+        self.lines.clear()
+
+    def latest(self) -> str:
+        return self.lines[-1] if self.lines else ""
+
+
+def _planner_error_msg(result: ComputePathToPose.Result, capture: _PlannerRosoutCapture) -> str:
+    field = (result.error_msg or "").strip()
+    if field:
+        return field
+    return capture.latest()
+
+
 def _plan_to(
     node: RclpyNode, client: ActionClient, start: tuple[float, float], goal: tuple[float, float]
 ) -> tuple[int, int, ComputePathToPose.Result]:
@@ -205,6 +233,9 @@ def _plan_to(
     result_future = goal_handle.get_result_async()
     rclpy.spin_until_future_complete(node, result_future, timeout_sec=60.0)
     result_wrap = result_future.result()
+    settle = time.monotonic() + 2.0
+    while time.monotonic() < settle:
+        rclpy.spin_once(node, timeout_sec=0.1)
     return goal_handle.status, result_wrap.result.error_code, result_wrap.result
 
 
@@ -221,22 +252,28 @@ def test_launch_b_global_costmap_matches_map() -> None:
 def test_launch_b_navfn_negative_goals() -> None:
     node = spin_create_node("launch_test_b_negative")
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
+    rosout = _PlannerRosoutCapture()
+    node.create_subscription(Log, "/rosout", rosout.cb, 100)
     _wait_for_locked_map(node, 45.0)
     _wait_for_global_costmap(node, 60.0)
     _wait_for_action(node, client, 90.0)
 
+    rosout.clear()
     shadow_status, shadow_code, shadow_result = _plan_to(node, client, START, GOAL_SHADOW)
-    print(f"navfn shadow error_code={shadow_code} error_msg={shadow_result.error_msg!r}")
+    shadow_err = _planner_error_msg(shadow_result, rosout)
+    print(f"navfn shadow status={shadow_status} code={shadow_code} error_msg={shadow_err!r}")
     assert shadow_status != GoalStatus.STATUS_SUCCEEDED
-    assert shadow_code == ERR_NO_VALID_PATH, shadow_result.error_msg
-    assert shadow_result.error_msg.strip()
+    assert shadow_code == ERR_NO_VALID_PATH
+    assert shadow_err
     assert len(shadow_result.path.poses) == 0
 
+    rosout.clear()
     face_status, face_code, face_result = _plan_to(node, client, START, GOAL_FACE)
-    print(f"navfn face error_code={face_code} error_msg={face_result.error_msg!r}")
+    face_err = _planner_error_msg(face_result, rosout)
+    print(f"navfn face status={face_status} code={face_code} error_msg={face_err!r}")
     assert face_status != GoalStatus.STATUS_SUCCEEDED
-    assert face_code == ERR_NO_VALID_PATH, face_result.error_msg
-    assert face_result.error_msg.strip()
+    assert face_code == ERR_NO_VALID_PATH
+    assert face_err
     assert len(face_result.path.poses) == 0
 
     node.destroy_node()

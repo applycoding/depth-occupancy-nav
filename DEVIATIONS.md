@@ -19,7 +19,7 @@ Rosdistro `jazzy/distribution.yaml` still lists the navigation2 release as **1.3
 
 ## Launch test B negative goal error codes (criterion 15)
 
-On Nav2 **1.3.13**, `nav2_navfn_planner/src/navfn_planner.cpp` (tag 1.3.13, about line 155) throws `GoalOccupied` (**206**) only when `tolerance_ == 0` and the goal cell is lethal. With `tolerance: 0.05` in `planner_server.yaml`, the face goal `(2.75, 0.00)` falls through to `makePlan`, which fails and returns `NoValidPathCouldBeFound` (**208**). Shadow `(5.50, 0.00)` also returns **208**. Launch test B asserts both negative goals yield **208**.
+On Nav2 **1.3.13**, `nav2_navfn_planner/src/navfn_planner.cpp` (tag 1.3.13, about line 155) throws `GoalOccupied` (**206**) only when `tolerance_ == 0` and the goal cell is lethal. With `tolerance: 0.05` in `planner_server.yaml`, the face goal `(2.75, 0.00)` falls through to `makePlan`, which fails and returns `NoValidPathCouldBeFound` (**208**). Shadow `(5.50, 0.00)` also returns **208**. Launch test B asserts both negative goals yield **208**. Nav2 **1.3.13** `planner_server` sets `error_code` but leaves the action `error_msg` string empty; launch test B prints and asserts non-empty planner diagnostics from that field when set, otherwise from `/rosout` WARN lines on `planner_server`.
 
 ## Height-filter mutant counts (criterion 10)
 
