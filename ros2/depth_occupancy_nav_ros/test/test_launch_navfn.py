@@ -151,8 +151,14 @@ def test_launch_b_navfn_around_path() -> None:
         if msg.info.width == 80 and msg.info.height == 60 and msg.data:
             costmap_ready.append(msg)
 
+    costmap_qos = QoSProfile(
+        depth=1,
+        reliability=ReliabilityPolicy.RELIABLE,
+        durability=DurabilityPolicy.VOLATILE,
+        history=HistoryPolicy.KEEP_LAST,
+    )
     node.create_subscription(
-        OccupancyGrid, "/global_costmap/costmap", costmap_cb, 10
+        OccupancyGrid, "/global_costmap/costmap", costmap_cb, costmap_qos
     )
     cost_deadline = time.monotonic() + 30.0
     while time.monotonic() < cost_deadline and not costmap_ready:
