@@ -1,5 +1,17 @@
 # Copyright 2026 Arpan Bom
-# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """Launch test B: Navfn planner on static-layer costmap fed by published /map."""
 
 from __future__ import annotations
@@ -15,11 +27,12 @@ import rclpy
 from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from nav_msgs.msg import OccupancyGrid
 from nav2_msgs.action import ComputePathToPose
+from nav2_msgs.srv import ManageLifecycleNodes
 from rclpy.action import ActionClient
 from rclpy.node import Node as RclpyNode
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
@@ -76,10 +89,8 @@ def launch_description_navfn() -> LaunchDescription:
         output="screen",
         parameters=[os.path.join(config_dir, "lifecycle_manager.yaml")],
     )
-    # Depth /map must exist before planner_server configures the static costmap layer.
-    delayed_nav = TimerAction(period=5.0, actions=[planner, lifecycle])
     return LaunchDescription(
-        [tf, stack, delayed_nav, launch_testing.actions.ReadyToTest()]
+        [tf, stack, planner, lifecycle, launch_testing.actions.ReadyToTest()]
     )
 
 
@@ -118,11 +129,24 @@ def _dist(a: tuple[float, float], b: tuple[float, float]) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
+def _startup_nav2_stack(node: RclpyNode, timeout: float = 60.0) -> None:
+    client = node.create_client(
+        ManageLifecycleNodes, "/lifecycle_manager_navigation/manage_nodes"
+    )
+    assert client.wait_for_service(timeout_sec=timeout), "lifecycle manager service missing"
+    req = ManageLifecycleNodes.Request()
+    req.command = ManageLifecycleNodes.Request.STARTUP
+    future = client.call_async(req)
+    rclpy.spin_until_future_complete(node, future, timeout_sec=timeout)
+    assert future.result() is not None and future.result().success, "Nav2 startup failed"
+
+
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_navfn_around_path() -> None:
     rclpy.init()
     node = RclpyNode("launch_test_b_client")
     map_msg = _wait_for_locked_map(node, 45.0)
+    _startup_nav2_stack(node)
 
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
     assert client.wait_for_server(timeout_sec=90.0), "compute_path_to_pose action missing"
