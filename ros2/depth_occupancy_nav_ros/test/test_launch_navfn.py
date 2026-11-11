@@ -27,12 +27,11 @@ import rclpy
 from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from nav_msgs.msg import OccupancyGrid
 from nav2_msgs.action import ComputePathToPose
-from nav2_msgs.srv import ManageLifecycleNodes
 from rclpy.action import ActionClient
 from rclpy.node import Node as RclpyNode
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
@@ -89,8 +88,9 @@ def launch_description_navfn() -> LaunchDescription:
         output="screen",
         parameters=[os.path.join(config_dir, "lifecycle_manager.yaml")],
     )
+    delayed_nav = TimerAction(period=4.0, actions=[planner, lifecycle])
     return LaunchDescription(
-        [tf, stack, planner, lifecycle, launch_testing.actions.ReadyToTest()]
+        [tf, stack, delayed_nav, launch_testing.actions.ReadyToTest()]
     )
 
 
@@ -129,32 +129,35 @@ def _dist(a: tuple[float, float], b: tuple[float, float]) -> float:
     return math.hypot(a[0] - b[0], a[1] - b[1])
 
 
-def _startup_nav2_stack(node: RclpyNode, timeout: float = 60.0) -> None:
-    client = node.create_client(
-        ManageLifecycleNodes, "/lifecycle_manager_navigation/manage_nodes"
-    )
-    assert client.wait_for_service(timeout_sec=timeout), "lifecycle manager service missing"
-    req = ManageLifecycleNodes.Request()
-    req.command = ManageLifecycleNodes.Request.STARTUP
-    future = client.call_async(req)
-    rclpy.spin_until_future_complete(node, future, timeout_sec=timeout)
-    assert future.result() is not None and future.result().success, "Nav2 startup failed"
-
-
 @pytest.mark.launch(fixture=launch_description_navfn)
 def test_launch_b_navfn_around_path() -> None:
     rclpy.init()
     node = RclpyNode("launch_test_b_client")
     map_msg = _wait_for_locked_map(node, 45.0)
-    _startup_nav2_stack(node)
 
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
     assert client.wait_for_server(timeout_sec=90.0), "compute_path_to_pose action missing"
 
-    # Extra time for static costmap to ingest transient-local /map.
-    deadline = time.monotonic() + 15.0
+    # Extra time for planner_server (4s delayed start) + static costmap ingest.
+    deadline = time.monotonic() + 30.0
     while time.monotonic() < deadline:
         rclpy.spin_once(node, timeout_sec=0.2)
+        if client.server_is_ready():
+            break
+
+    costmap_ready: list[OccupancyGrid] = []
+
+    def costmap_cb(msg: OccupancyGrid) -> None:
+        if msg.info.width == 80 and msg.info.height == 60 and msg.data:
+            costmap_ready.append(msg)
+
+    node.create_subscription(
+        OccupancyGrid, "/global_costmap/costmap", costmap_cb, 10
+    )
+    cost_deadline = time.monotonic() + 30.0
+    while time.monotonic() < cost_deadline and not costmap_ready:
+        rclpy.spin_once(node, timeout_sec=0.2)
+    assert costmap_ready, "global_costmap never received /map-backed costmap"
 
     goal = ComputePathToPose.Goal()
     stamp = node.get_clock().now().to_msg()
