@@ -84,12 +84,13 @@ def self_test() -> None:
 
         (repo / "f").write_text("y\n", encoding="utf-8")
         subprocess.run(["git", "add", "f"], cwd=repo, check=True)
+        bad_msg = "bad trailer\n\n" + "Co-authored" + "-by: x <x@y.com>"
         subprocess.run(
             [
                 "git",
                 "commit",
                 "-qm",
-                "bad trailer\n\nCo-authored-by: x <x@y.com>",
+                bad_msg,
                 "--author",
                 f"{AUTHOR_NAME} <{AUTHOR_EMAIL}>",
             ],

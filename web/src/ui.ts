@@ -13,9 +13,9 @@ export function initApp(root: HTMLElement): void {
       <p class="honesty">Simulation only. Synthetic depth. Not validated on real cameras or robots.</p>
     </header>
     <section class="metrics" aria-label="Pipeline metrics">
-      <span>Occupied cells: <strong id="occupied-metric">–</strong></span>
-      <span>Map points: <strong id="points-metric" data-points="">–</strong></span>
-      <span id="path-metric" data-path-length="0" data-has-path="false">Path length: –</span>
+      <span>Occupied cells: <strong id="occupied-metric">-</strong></span>
+      <span>Map points: <strong id="points-metric" data-points="">-</strong></span>
+      <span id="path-metric" data-path-length="0" data-has-path="false">Path length: -</span>
     </section>
     <section class="controls">
       <label>Noise scale

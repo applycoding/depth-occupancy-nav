@@ -20,6 +20,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.conditions import IfCondition
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 
 def generate_launch_description() -> LaunchDescription:
@@ -69,10 +70,15 @@ def generate_launch_description() -> LaunchDescription:
             {
                 "frame_id": "camera_optical_frame",
                 "publish_rate_hz": 5.0,
-                "bad_camera_info_after": LaunchConfiguration("bad_camera_info_after"),
-                "bad_camera_from_start": LaunchConfiguration("bad_camera_from_start"),
-                "publish_noisy_depth_with_bad_ci": LaunchConfiguration(
-                    "publish_noisy_depth_with_bad_ci"
+                "bad_camera_info_after": ParameterValue(
+                    LaunchConfiguration("bad_camera_info_after"), value_type=int
+                ),
+                "bad_camera_from_start": ParameterValue(
+                    LaunchConfiguration("bad_camera_from_start"), value_type=bool
+                ),
+                "publish_noisy_depth_with_bad_ci": ParameterValue(
+                    LaunchConfiguration("publish_noisy_depth_with_bad_ci"),
+                    value_type=bool,
                 ),
             }
         ],

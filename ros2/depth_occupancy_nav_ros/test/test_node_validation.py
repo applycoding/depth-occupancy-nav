@@ -80,7 +80,8 @@ def test_rejects_short_payload() -> None:
 
 def test_rejects_oversized_payload() -> None:
     img = _valid_depth_image()
-    img.data = img.data + struct.pack("<f", 1.0)
+    extra = np.array(struct.pack("<f", 1.0), dtype=np.uint8)
+    img.data = np.concatenate([np.asarray(img.data, dtype=np.uint8), extra])
     assert not depth_payload_size_valid(img)
 
 
