@@ -9,3 +9,5 @@ web/dist/
 web/test-results/
 apt-versions.txt
 ros-debs/
+wheelhouse/
+get-pip.py
