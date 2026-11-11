@@ -128,8 +128,14 @@ jobs:
       - name: Fetch Nav2 debs on host
         run: |
           set -euo pipefail
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|azure\.archive\.ubuntu\.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt
+          fi
           sudo sed -i 's|azure\.archive\.ubuntu\.com|archive.ubuntu.com|g' /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null || true
-          sudo apt-get update -qq
+          for i in 1 2 3 4 5; do
+            sudo apt-get update -qq && break
+            sleep $((i * 5))
+          done
           sudo apt-get install -y -qq ca-certificates curl
           sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key \
             -o /usr/share/keyrings/ros-archive-keyring.gpg
