@@ -1,4 +1,6 @@
 # Copyright 2026 Arpan Bom
+
+# Licensed under the Apache License, Version 2.0
 # SPDX-License-Identifier: Apache-2.0
 """Launch test B: Navfn planner on static-layer costmap fed by published /map."""
 
@@ -15,7 +17,7 @@ import rclpy
 from action_msgs.msg import GoalStatus
 from geometry_msgs.msg import PoseStamped
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from nav_msgs.msg import OccupancyGrid
@@ -76,8 +78,10 @@ def launch_description_navfn() -> LaunchDescription:
         output="screen",
         parameters=[os.path.join(config_dir, "lifecycle_manager.yaml")],
     )
+    # Depth /map must exist before planner_server configures the static costmap layer.
+    delayed_nav = TimerAction(period=2.0, actions=[planner, lifecycle])
     return LaunchDescription(
-        [tf, stack, planner, lifecycle, launch_testing.actions.ReadyToTest()]
+        [tf, stack, delayed_nav, launch_testing.actions.ReadyToTest()]
     )
 
 
@@ -123,7 +127,7 @@ def test_launch_b_navfn_around_path() -> None:
     map_msg = _wait_for_locked_map(node, 45.0)
 
     client = ActionClient(node, ComputePathToPose, "compute_path_to_pose")
-    assert client.wait_for_server(timeout_sec=60.0), "compute_path_to_pose action missing"
+    assert client.wait_for_server(timeout_sec=90.0), "compute_path_to_pose action missing"
 
     # Extra time for static costmap to ingest transient-local /map.
     deadline = time.monotonic() + 15.0

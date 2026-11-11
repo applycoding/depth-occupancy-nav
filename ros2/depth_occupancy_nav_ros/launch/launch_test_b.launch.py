@@ -1,9 +1,11 @@
 # Copyright 2026 Arpan Bom
+
+# Licensed under the Apache License, Version 2.0
 # SPDX-License-Identifier: Apache-2.0
 """Launch graph for launch test B (Navfn on published /map)."""
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
@@ -41,4 +43,5 @@ def generate_launch_description() -> LaunchDescription:
         parameters=[os.path.join(config_dir, "lifecycle_manager.yaml")],
     )
 
-    return LaunchDescription([tf, stack, planner, lifecycle])
+    delayed_nav = TimerAction(period=2.0, actions=[planner, lifecycle])
+    return LaunchDescription([tf, stack, delayed_nav])
