@@ -144,7 +144,6 @@ jobs:
           sudo apt-get update -qq
           mkdir -p ros-debs
           sudo apt-get install -y -qq --download-only \
-            python3-pip \
             ros-jazzy-nav2-navfn-planner \
             ros-jazzy-nav2-planner \
             ros-jazzy-nav2-costmap-2d \
@@ -170,6 +169,8 @@ jobs:
               test "$NAVFN_VER" = "1.3.14-1"
               test "$PLANNER_VER" = "1.3.14-1"
               dpkg-query -W > /ws/apt-versions.txt
+              python3 -m ensurepip --upgrade
+              python3 -m pip install -q --break-system-packages pip setuptools wheel
               python3 -m pip install -q --break-system-packages -e /ws
               cd /ws/ros2/depth_occupancy_nav_ros
               colcon build --packages-select depth_occupancy_nav_ros
