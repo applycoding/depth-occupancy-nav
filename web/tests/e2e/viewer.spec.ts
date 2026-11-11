@@ -59,8 +59,39 @@ test.describe("viewer (criterion 16)", () => {
   test("default data-occupied from grid", async ({ page }) => {
     await page.goto("./");
     const metric = page.locator("#occupied-metric");
-    await expect(metric).toHaveAttribute("data-occupied", "22");
+    await expect(metric).toHaveAttribute("data-occupied", "22", { timeout: 5000 });
     await expect(metric).toHaveText("22");
+    const points = page.locator("#points-metric");
+    await expect(points).toHaveAttribute("data-points", "2434");
+    const pointsCanvas = page.locator("#points-canvas");
+    const varPts = await pointsCanvas.evaluate((canvas: HTMLCanvasElement) => {
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return 0;
+      const { data, width, height } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let sum = 0;
+      let sumSq = 0;
+      const n = width * height;
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = data[i]! + data[i + 1]! + data[i + 2]!;
+        sum += lum;
+        sumSq += lum * lum;
+      }
+      const mean = sum / n;
+      return sumSq / n - mean * mean;
+    });
+    expect(varPts).toBeGreaterThan(DEPTH_VARIANCE_MIN);
+  });
+
+  test("report.json matches UI counts in CI", async ({ page }) => {
+    await page.goto("./");
+    const res = await page.request.get("./report.json");
+    expect(res.ok()).toBeTruthy();
+    const rep = (await res.json()) as { occupancy_clean: { occupied: number }; sample: boolean };
+    const metric = page.locator("#occupied-metric");
+    await expect(metric).toHaveAttribute("data-occupied", String(rep.occupancy_clean.occupied));
+    if (process.env.CI) {
+      expect(rep.sample).toBe(false);
+    }
   });
 
   test("around path length 51 and screenshot", async ({ page }) => {

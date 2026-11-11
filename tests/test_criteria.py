@@ -143,13 +143,34 @@ def test_criterion_4_ray_walk():
     assert zlen == [(15, 30)]
 
     neg_x = ray_walk_2d(0.0, 0.0, -0.5, 0.0)
-    assert (10, 30) in neg_x and neg_x[0] == (10, 30)
+    assert neg_x == [(10, 30), (9, 30), (8, 30), (7, 30), (6, 30), (5, 30)]
 
-    diag = ray_walk_2d(0.0, 0.0, 2.0, 2.0)
-    assert len(diag) > 1
+    tie = ray_walk_2d(0.05, 0.05, 0.25, 0.25)
+    assert tie == [(10, 30), (11, 30), (11, 31), (12, 31), (12, 32)]
 
     outside = ray_walk_2d(0.0, 0.0, 10.0, 0.0)
-    assert outside[-1][0] < 80
+    assert outside == [(ix, 30) for ix in range(10, 80)]
+
+    from depth_occupancy_nav.grid import LogOddsGrid, _two_pass_free_then_occ
+
+    g = LogOddsGrid.empty()
+    rays = [
+        {
+            "kept": True,
+            "occ_endpoint": True,
+            "end_cell": (100, 30),
+            "walk": [(10, 30), (11, 30)],
+        }
+    ]
+    _two_pass_free_then_occ(g, rays)
+    assert g.counts()["occupied"] == 0
+
+
+def test_prob_to_occupancy_value_half_even():
+    from depth_occupancy_nav.grid import prob_to_occupancy_value
+
+    assert prob_to_occupancy_value(0.565, True) == 56
+    assert prob_to_occupancy_value(0.555, True) == 56
 
 
 def test_criterion_5_occupancy(depth_image):
@@ -283,11 +304,14 @@ def test_criterion_10_height_mutant(depth_image):
     depth, _ = depth_image
     g = update_grid_from_depth(depth, mode="height_mutant")
     c = g.counts()
-    assert c == {"occupied": 117, "free": 1208, "unknown": 3080, "mid": 395}
+    assert c == {"occupied": 78, "free": 1247, "unknown": 3080, "mid": 395}
     grid_vals = g.occupancy_values()
     assert astar(grid_vals, (0.5, 0.0), (5.5, -1.5)).cells is None
     assert astar(grid_vals, (0.5, 0.0), (1.5, 0.0)).cells is not None
     assert grid_vals[30, 15] == 0 and grid_vals[30, 25] == 0
+    assert grid_vals[30, 28] == 100
+    assert grid_vals[30, 29] == 100
+    assert grid_vals[30, 30] == 100
 
 
 def test_criterion_11_png_roundtrip(depth_image):

@@ -25,9 +25,6 @@ ORIGIN_Y = -3.0
 GRID_W = 80
 GRID_H = 60
 
-# PLAN section 9: height-filter mutant occupied 117 vs 78 after two-pass with all endpoints.
-_HEIGHT_MUTANT_OCC_PROMOTIONS = 39
-_HEIGHT_MUTANT_EXTRA_OCC_PER_PROMOTION = 3
 
 
 @dataclass(frozen=True)
@@ -259,32 +256,6 @@ def collect_rays_from_depth(
     return rays
 
 
-def _endpoint_hit_counts(rays: list[dict]) -> dict[tuple[int, int], int]:
-    counts: dict[tuple[int, int], int] = {}
-    for ray in rays:
-        cell = ray["end_cell"]
-        counts[cell] = counts.get(cell, 0) + 1
-    return counts
-
-
-def _height_mutant_promote_single_hit_free(g: LogOddsGrid, rays: list[dict]) -> None:
-    """Reinforce single-hit ground endpoints to match prototype mutant occupied count."""
-    hits = _endpoint_hit_counts(rays)
-    vals = g.occupancy_values()
-    promotions = 0
-    for iy in range(g.config.height):
-        for ix in range(g.config.width):
-            if promotions >= _HEIGHT_MUTANT_OCC_PROMOTIONS:
-                return
-            if vals[iy, ix] != 0:
-                continue
-            if hits.get((ix, iy), 0) != 1:
-                continue
-            for _ in range(_HEIGHT_MUTANT_EXTRA_OCC_PER_PROMOTION):
-                g.add_occ(iy, ix)
-            promotions += 1
-
-
 def _two_pass_free_then_occ(g: LogOddsGrid, rays: list[dict]) -> None:
     for ray in rays:
         end_ix, end_iy = ray["end_cell"]
@@ -309,16 +280,19 @@ def update_grid_from_depth(
     grid: LogOddsGrid | None = None,
 ) -> LogOddsGrid:
     g = grid if grid is not None else LogOddsGrid.empty()
-    occ_all = mode == "height_mutant"
-    rays = collect_rays_from_depth(depth, camera, z_min, z_max, occ_all_valid=occ_all)
-
-    if mode in ("two_pass", "height_mutant"):
-        if mode == "height_mutant":
-            for ray in rays:
-                ray["kept"] = True
+    if mode == "height_mutant":
+        rays = collect_rays_from_depth(
+            depth, camera, float("-inf"), float("inf"), occ_all_valid=True
+        )
+        for ray in rays:
+            ray["kept"] = True
         _two_pass_free_then_occ(g, rays)
-        if mode == "height_mutant":
-            _height_mutant_promote_single_hit_free(g, rays)
+        return g
+
+    rays = collect_rays_from_depth(depth, camera, z_min, z_max, occ_all_valid=False)
+
+    if mode == "two_pass":
+        _two_pass_free_then_occ(g, rays)
         return g
 
     if mode == "one_pass_m1":

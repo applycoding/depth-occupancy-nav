@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # GitHub Actions pin record (verified 2026-11-11)
 
 | Action | Version | SHA |
@@ -20,4 +21,12 @@
 
 ## navigation2 (apt)
 
-ROS apt on noble (measured CI 2026-11-11): `ros-jazzy-nav2-navfn-planner` and `ros-jazzy-nav2-planner` Debian versions begin with **1.3.13-1** (upstream Navigation2 1.3.13). PLAN.md still lists 1.3.14-1 from the 2026-11-11 rosdistro check; see `DEVIATIONS.md`.
+ROS apt on noble (measured CI 2026-11-11). CI pins exact equality on:
+
+| Debian package | Full version |
+| --- | --- |
+| ros-jazzy-nav2-navfn-planner | 1.3.13-1noble.20260921.031752 |
+| ros-jazzy-nav2-planner | 1.3.13-1noble.20260921.031801 |
+| ros-jazzy-nav2-costmap-2d | 1.3.13-1noble.20260921.024946 |
+
+Upstream Navigation2 **1.3.13**. Rosdistro lists **1.3.14-1**; noble apt served the builds above at the pin date. PLAN.md section 3 still lists 1.3.14-1 from the original rosdistro check; gates use PLAN Amendment 1 and `DEVIATIONS.md`.

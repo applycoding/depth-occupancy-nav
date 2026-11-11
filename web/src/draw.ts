@@ -40,10 +40,10 @@ export function drawTopDown(
 ): void {
   const scale = 40;
   const pad = 20;
-  const mapW = 8;
-  const mapH = 6;
-  const cw = mapW * scale + pad * 2;
-  const ch = mapH * scale + pad * 2;
+  const mapWm = GRID_W * RESOLUTION;
+  const mapHm = GRID_H * RESOLUTION;
+  const cw = mapWm * scale + pad * 2;
+  const ch = mapHm * scale + pad * 2;
   canvas.width = cw;
   canvas.height = ch;
   const ctx = canvas.getContext("2d");
@@ -54,13 +54,13 @@ export function drawTopDown(
   ctx.fillRect(0, 0, cw, ch);
 
   const toCanvas = (x: number, y: number): [number, number] => {
-    const px = pad + ((x - ORIGIN_X) / (mapW * RESOLUTION)) * mapW * scale;
-    const py = pad + ((y - ORIGIN_Y) / (mapH * RESOLUTION)) * mapH * scale;
+    const px = pad + ((x - ORIGIN_X) / mapWm) * mapWm * scale;
+    const py = pad + mapHm * scale - ((y - ORIGIN_Y) / mapHm) * mapHm * scale;
     return [px, py];
   };
 
   ctx.strokeStyle = "#444";
-  ctx.strokeRect(pad, pad, mapW * scale, mapH * scale);
+  ctx.strokeRect(pad, pad, mapWm * scale, mapHm * scale);
 
   ctx.fillStyle = "rgba(80,80,120,0.5)";
   for (const box of [FRONT_BOX, SIDE_BOX]) {

@@ -13,8 +13,9 @@ export function initApp(root: HTMLElement): void {
       <p class="honesty">Simulation only. Synthetic depth. Not validated on real cameras or robots.</p>
     </header>
     <section class="metrics" aria-label="Pipeline metrics">
-      <span>Occupied cells: <strong id="occupied-metric" data-occupied="22">22</strong></span>
-      <span id="path-metric" data-path-length="0" data-has-path="true">Path length: 0</span>
+      <span>Occupied cells: <strong id="occupied-metric">–</strong></span>
+      <span>Map points: <strong id="points-metric" data-points="">–</strong></span>
+      <span id="path-metric" data-path-length="0" data-has-path="false">Path length: –</span>
     </section>
     <section class="controls">
       <label>Noise scale
@@ -29,11 +30,11 @@ export function initApp(root: HTMLElement): void {
         <input type="range" id="zmax" min="1" max="2" step="0.01" value="${Z_MAX_DEFAULT}" />
         <span id="zmax-val">${Z_MAX_DEFAULT}</span>
       </label>
-      <motion class="goals">
+      <div class="goals">
         <button type="button" data-goal="open" class="active">Open goal</button>
         <button type="button" data-goal="around">Around goal</button>
         <button type="button" data-goal="shadow">Shadow goal</button>
-      </motion>
+      </div>
     </section>
     <section class="views">
       <figure>
@@ -49,13 +50,16 @@ export function initApp(root: HTMLElement): void {
         <canvas id="occ-canvas"></canvas>
       </figure>
     </section>
-  `.replace("<motion", "<div").replace("</motion>", "</div>");
+    <footer class="footer" id="report-footer">Loading report…</footer>
+  `;
 
   const depthCanvas = root.querySelector<HTMLCanvasElement>("#depth-canvas")!;
   const pointsCanvas = root.querySelector<HTMLCanvasElement>("#points-canvas")!;
   const occCanvas = root.querySelector<HTMLCanvasElement>("#occ-canvas")!;
   const occupiedEl = root.querySelector<HTMLElement>("#occupied-metric")!;
+  const pointsEl = root.querySelector<HTMLElement>("#points-metric")!;
   const pathEl = root.querySelector<HTMLElement>("#path-metric")!;
+  const footerEl = root.querySelector<HTMLElement>("#report-footer")!;
   const noiseInput = root.querySelector<HTMLInputElement>("#noise")!;
   const zminInput = root.querySelector<HTMLInputElement>("#zmin")!;
   const zmaxInput = root.querySelector<HTMLInputElement>("#zmax")!;
@@ -63,11 +67,16 @@ export function initApp(root: HTMLElement): void {
   const recompute = (): void => {
     const state = runPipeline(opts);
     drawDepth(depthCanvas, state.depth, W, H);
+    depthCanvas.style.width = "320px";
+    depthCanvas.style.height = "240px";
+    depthCanvas.style.imageRendering = "pixelated";
     drawTopDown(pointsCanvas, state.mapPoints, state.path);
     drawOccupancy(occCanvas, state.occupancy, state.path);
 
     occupiedEl.textContent = String(state.counts.occupied);
     occupiedEl.dataset.occupied = String(state.counts.occupied);
+    pointsEl.textContent = String(state.mapPoints.length);
+    pointsEl.dataset.points = String(state.mapPoints.length);
 
     const pathLen = state.path?.length ?? 0;
     const hasPath = state.path !== null && Number.isFinite(state.pathCost);
@@ -111,5 +120,17 @@ export function initApp(root: HTMLElement): void {
   }
 
   document.title = "depth-occupancy-nav (simulation only, synthetic depth)";
+
+  const base = import.meta.env.BASE_URL;
+  fetch(`${base}report.json`)
+    .then((r) => r.json())
+    .then((rep: { git_sha: string; sample: boolean }) => {
+      const short = rep.git_sha.slice(0, 7);
+      footerEl.textContent = `Build ${short} · sample=${rep.sample}`;
+    })
+    .catch(() => {
+      footerEl.textContent = "report.json unavailable (run build)";
+    });
+
   recompute();
 }

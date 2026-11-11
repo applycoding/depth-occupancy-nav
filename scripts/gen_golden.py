@@ -4,14 +4,13 @@
 from __future__ import annotations
 
 import json
-import math
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from depth_occupancy_nav.backproject import pixel_to_map
-from depth_occupancy_nav.camera import Camera, FX, CY, CX
+from depth_occupancy_nav.camera import CX, CY, FX, Camera
 from depth_occupancy_nav.grid import L_FREE, L_OCC, ray_walk_2d, update_grid_from_depth
 from depth_occupancy_nav.planner import astar
 from depth_occupancy_nav.render import render_depth
