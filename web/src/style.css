@@ -1,0 +1,89 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+:root {
+  font-family: system-ui, sans-serif;
+  color: #e8e8f0;
+  background: #12121c;
+}
+
+body {
+  margin: 0;
+  padding: 1rem;
+}
+
+.banner h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+.honesty {
+  margin: 0;
+  color: #9ab;
+  font-size: 0.9rem;
+}
+
+.metrics {
+  display: flex;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  font-size: 0.95rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-bottom: 1rem;
+  align-items: center;
+}
+
+.controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.goals {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.goals button {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #555;
+  background: #222;
+  color: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.goals button.active {
+  background: #384;
+  border-color: #6a8;
+}
+
+.views {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+figure {
+  margin: 0;
+}
+
+figcaption {
+  font-size: 0.8rem;
+  color: #8ac;
+  margin-bottom: 0.25rem;
+}
+
+canvas {
+  max-width: 100%;
+  image-rendering: pixelated;
+  border: 1px solid #333;
+}
+
+input[type="range"] {
+  width: 12rem;
+}
