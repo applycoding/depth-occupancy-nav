@@ -129,7 +129,7 @@ jobs:
         run: |
           set -euo pipefail
           IMAGE="ros:jazzy-ros-base@sha256:8eed0a4669bbf43ee331878a4c39bd8ebddea8e3312a58b4fae8edb14526b617"
-          docker run --rm --init --platform linux/amd64 \
+          docker run --rm --init --network host --platform linux/amd64 \
             -v "$GITHUB_WORKSPACE:/ws" -w /ws "$IMAGE" bash -lc '
               set -eo pipefail
               set +u
