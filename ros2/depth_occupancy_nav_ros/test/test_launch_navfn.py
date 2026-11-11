@@ -148,6 +148,13 @@ def test_launch_b_navfn_around_path() -> None:
     while time.monotonic() < settle:
         rclpy.spin_once(node, timeout_sec=0.2)
 
+    map_pub = node.create_publisher(OccupancyGrid, "map", MAP_QOS)
+    for _ in range(20):
+        stamp = node.get_clock().now().to_msg()
+        map_msg.header.stamp = stamp
+        map_pub.publish(map_msg)
+        rclpy.spin_once(node, timeout_sec=0.1)
+
     goal = ComputePathToPose.Goal()
     stamp = node.get_clock().now().to_msg()
     goal.use_start = True
