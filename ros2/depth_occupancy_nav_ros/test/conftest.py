@@ -17,15 +17,11 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 import pytest
-
-try:
-    import rclpy
-except ImportError:
-    rclpy = None  # type: ignore[assignment]
 
 _ROOT = Path(__file__).resolve().parents[2].parent
 _SRC = _ROOT / "src"
@@ -34,22 +30,33 @@ for p in (str(_SRC), str(_PKG)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+_DO_REQUIRE = os.environ.get("DO_REQUIRE_ROS") == "1"
+
+if _DO_REQUIRE:
+    import ament_copyright  # noqa: F401
+    import launch_pytest  # noqa: F401
+    import rclpy  # noqa: F401
+    import sensor_msgs  # noqa: F401
+
 
 def spin_create_node(name: str):
-    if rclpy is None:
-        raise RuntimeError("rclpy not installed")
-    if not rclpy.ok():
-        rclpy.init()
+    import rclpy
     from rclpy.node import Node
 
+    if not rclpy.ok():
+        rclpy.init()
     return Node(name)
 
 
 def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
+    if _DO_REQUIRE:
+        return
     try:
         import launch_pytest  # noqa: F401
     except ImportError:
-        skip_launch = pytest.mark.skip(reason="launch_pytest not available (run in ROS Jazzy image)")
+        skip_launch = pytest.mark.skip(
+            reason="launch_pytest not available (run in ROS Jazzy image)"
+        )
         for item in items:
             if "test_launch" in item.nodeid:
                 item.add_marker(skip_launch)

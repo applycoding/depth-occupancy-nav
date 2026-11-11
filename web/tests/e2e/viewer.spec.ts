@@ -102,6 +102,9 @@ test.describe("viewer (criterion 16)", () => {
     await expect(pathMetric).toHaveAttribute("data-has-path", "true");
 
     const demoPath = path.resolve(__dirname, "../../../docs/demo.png");
+    await page.locator("#report-footer").evaluate((el) => {
+      (el as HTMLElement).style.visibility = "hidden";
+    });
     await page.screenshot({ path: demoPath, fullPage: true });
   });
 

@@ -18,15 +18,13 @@
 from __future__ import annotations
 
 import pytest
-
-pytest.importorskip("sensor_msgs")
-from sensor_msgs.msg import CameraInfo  # noqa: E402
-
-from depth_occupancy_nav.camera import CX, FX, H, W  # noqa: E402
 from depth_occupancy_nav_ros.camera_contract import (  # noqa: E402
     camera_info_valid,
     locked_camera_info_msg,
 )
+from sensor_msgs.msg import CameraInfo
+
+from depth_occupancy_nav.camera import CX, CY, FX, FY, H, W
 
 
 @pytest.fixture
@@ -123,3 +121,25 @@ def test_intrinsics_tolerance(valid_ci: CameraInfo) -> None:
     assert camera_info_valid(valid_ci)
     valid_ci.k[2] = CX + 1e-6
     assert not camera_info_valid(valid_ci)
+
+
+@pytest.mark.parametrize(
+    ("index", "base", "delta_reject", "delta_accept"),
+    [
+        (0, FX, 2e-9, 5e-10),
+        (4, FY, 2e-9, 5e-10),
+        (2, CX, 2e-9, 5e-10),
+        (5, CY, 2e-9, 5e-10),
+    ],
+)
+def test_intrinsic_offsets_at_tolerance(
+    valid_ci: CameraInfo,
+    index: int,
+    base: float,
+    delta_reject: float,
+    delta_accept: float,
+) -> None:
+    valid_ci.k[index] = base + delta_reject
+    assert not camera_info_valid(valid_ci)
+    valid_ci.k[index] = base + delta_accept
+    assert camera_info_valid(valid_ci)

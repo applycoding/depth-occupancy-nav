@@ -21,33 +21,30 @@ import math
 import os
 import time
 
-import pytest
-
-pytest.importorskip("launch_pytest")
 import launch_pytest
 import launch_testing.actions
+import pytest
 import rclpy
 from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import PoseStamped
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
-from nav_msgs.msg import OccupancyGrid
-from nav2_msgs.action import ComputePathToPose
-from rclpy.action import ActionClient
-from rclpy.node import Node as RclpyNode
-from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
-
-from depth_occupancy_nav.grid import ORIGIN_X, ORIGIN_Y, RESOLUTION
 from conftest import spin_create_node
-
 from depth_occupancy_nav_ros.grid_checks import (
     assert_path_poses_in_bounds,
     assert_path_samples_free,
     grid_value_at_world,
     occupancy_counts,
 )
+from geometry_msgs.msg import PoseStamped
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.actions import Node
+from nav2_msgs.action import ComputePathToPose
+from nav_msgs.msg import OccupancyGrid
+from rclpy.action import ActionClient
+from rclpy.node import Node as RclpyNode
+from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
+
+from depth_occupancy_nav.grid import ORIGIN_X, ORIGIN_Y, RESOLUTION
 
 MAP_QOS = QoSProfile(
     depth=1,
@@ -65,9 +62,6 @@ POSE_TOL = 0.15
 # nav2_msgs/action/ComputePathToPose.action result codes (Nav2 1.3.x)
 ERR_NONE = 0
 ERR_NO_VALID_PATH = 208
-ERR_GOAL_OCCUPIED = 206
-
-
 def _pkg_share() -> str:
     from ament_index_python.packages import get_package_share_directory
 
@@ -232,13 +226,17 @@ def test_launch_b_navfn_negative_goals() -> None:
     _wait_for_action(node, client, 90.0)
 
     shadow_status, shadow_code, shadow_result = _plan_to(node, client, START, GOAL_SHADOW)
+    print(f"navfn shadow error_code={shadow_code} error_msg={shadow_result.error_msg!r}")
     assert shadow_status != GoalStatus.STATUS_SUCCEEDED
     assert shadow_code == ERR_NO_VALID_PATH, shadow_result.error_msg
+    assert shadow_result.error_msg.strip()
     assert len(shadow_result.path.poses) == 0
 
     face_status, face_code, face_result = _plan_to(node, client, START, GOAL_FACE)
+    print(f"navfn face error_code={face_code} error_msg={face_result.error_msg!r}")
     assert face_status != GoalStatus.STATUS_SUCCEEDED
     assert face_code == ERR_NO_VALID_PATH, face_result.error_msg
+    assert face_result.error_msg.strip()
     assert len(face_result.path.poses) == 0
 
     node.destroy_node()

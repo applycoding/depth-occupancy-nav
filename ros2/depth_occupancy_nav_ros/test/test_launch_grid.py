@@ -20,27 +20,22 @@ from __future__ import annotations
 import os
 import time
 
-import pytest
-
-pytest.importorskip("launch_pytest")
 import launch_pytest
 import launch_testing.actions
+import pytest
 import rclpy
+from conftest import spin_create_node
+from depth_occupancy_nav_ros.grid_checks import assert_criterion5_grid, occupancy_counts
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
 from nav_msgs.msg import OccupancyGrid
-from rclpy.node import Node as RclpyNode
 from rclpy.qos import (
     DurabilityPolicy,
     HistoryPolicy,
     QoSProfile,
     ReliabilityPolicy,
 )
-
-from depth_occupancy_nav_ros.grid_checks import assert_criterion5_grid, occupancy_counts
-from conftest import spin_create_node
 
 MAP_QOS = QoSProfile(
     depth=1,

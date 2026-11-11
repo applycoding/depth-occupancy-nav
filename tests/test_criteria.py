@@ -169,6 +169,7 @@ def test_criterion_4_ray_walk():
 def test_prob_to_occupancy_value_half_even():
     from depth_occupancy_nav.grid import prob_to_occupancy_value
 
+    assert prob_to_occupancy_value(0.625, True) == 62
     assert prob_to_occupancy_value(0.565, True) == 56
     assert prob_to_occupancy_value(0.555, True) == 56
 

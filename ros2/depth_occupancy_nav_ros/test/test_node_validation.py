@@ -20,17 +20,15 @@ from __future__ import annotations
 import struct
 
 import numpy as np
-import pytest
-
-pytest.importorskip("sensor_msgs")
-from sensor_msgs.msg import CameraInfo, Image  # noqa: E402
-
-from depth_occupancy_nav.camera import H, W  # noqa: E402
-from depth_occupancy_nav_ros.camera_contract import locked_camera_info_msg  # noqa: E402
-from depth_occupancy_nav_ros.node import (  # noqa: E402
+from depth_occupancy_nav_ros.camera_contract import locked_camera_info_msg
+from depth_occupancy_nav_ros.node import (
     depth_image_format_valid,
+    depth_message_acceptable,
     depth_payload_size_valid,
 )
+from sensor_msgs.msg import CameraInfo, Image
+
+from depth_occupancy_nav.camera import H, W
 
 
 def _valid_depth_image() -> Image:
@@ -44,6 +42,10 @@ def _valid_depth_image() -> Image:
     data = np.zeros((H, W), dtype=np.float32)
     img.data = data.tobytes(order="C")
     return img
+
+
+def _valid_ci() -> CameraInfo:
+    return locked_camera_info_msg("camera_optical_frame")
 
 
 def test_depth_image_format_valid_locked() -> None:
@@ -84,17 +86,39 @@ def test_rejects_oversized_payload() -> None:
     assert not depth_payload_size_valid(img)
 
 
-def test_image_camera_size_mismatch() -> None:
-    ci = locked_camera_info_msg("camera_optical_frame")
+def test_depth_acceptable_locked_pair() -> None:
+    assert depth_message_acceptable(_valid_depth_image(), _valid_ci())
+
+
+def test_rejects_frame_id_mismatch() -> None:
     img = _valid_depth_image()
+    img.header.frame_id = "other_frame"
+    assert not depth_message_acceptable(img, _valid_ci())
+
+
+def test_rejects_width_mismatch_with_ci() -> None:
+    img = _valid_depth_image()
+    ci = _valid_ci()
     img.width = W - 1
-    assert img.width != ci.width
-    assert img.height == ci.height
+    assert not depth_message_acceptable(img, ci)
 
 
-def test_image_camera_height_mismatch() -> None:
-    ci = locked_camera_info_msg("camera_optical_frame")
+def test_rejects_height_mismatch_with_ci() -> None:
     img = _valid_depth_image()
+    ci = _valid_ci()
     img.height = H - 1
+    img.step = (H - 1) * 4
     img.data = np.zeros((H - 1, W), dtype=np.float32).tobytes(order="C")
-    assert img.height != ci.height
+    assert not depth_message_acceptable(img, ci)
+
+
+def test_rejects_bad_encoding_via_acceptable() -> None:
+    img = _valid_depth_image()
+    img.encoding = "16UC1"
+    assert not depth_message_acceptable(img, _valid_ci())
+
+
+def test_rejects_short_payload_via_acceptable() -> None:
+    img = _valid_depth_image()
+    img.data = img.data[: len(img.data) - 4]
+    assert not depth_message_acceptable(img, _valid_ci())

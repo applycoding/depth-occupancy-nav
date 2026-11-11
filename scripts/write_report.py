@@ -16,6 +16,9 @@ from depth_occupancy_nav.render import render_depth
 
 
 def _git_sha() -> str:
+    pref = os.environ.get("REPORT_GIT_SHA", "").strip()
+    if pref:
+        return pref
     env = os.environ.get("GITHUB_SHA", "").strip()
     if env:
         return env
@@ -52,11 +55,12 @@ def build_report() -> dict:
     hm = update_grid_from_depth(depth, mode="height_mutant").counts()
     m1 = update_grid_from_depth(depth, mode="one_pass_m1").counts()
     m2 = update_grid_from_depth(depth, mode="one_pass_m2").counts()
-    in_ci = bool(os.environ.get("GITHUB_SHA"))
+    in_ci = bool(os.environ.get("GITHUB_ACTIONS"))
     return {
         "schema": 1,
         "git_sha": _git_sha(),
         "sample": not in_ci,
+        "ci_event": os.environ.get("GITHUB_EVENT_NAME", ""),
         "ci_run_id": os.environ.get("GITHUB_RUN_ID", ""),
         "valid_pixels": valid,
         "renderer": {

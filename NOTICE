@@ -20,8 +20,8 @@ Exact Debian versions are recorded in the CI `apt-versions` artifact (`dpkg-quer
 | ros-jazzy-nav2-navfn-planner | 1.3.13-1noble.20260921.031752 | Apache-2.0 and BSD-3-Clause |
 | ros-jazzy-nav2-planner | 1.3.13-1noble.20260921.031801 | Apache-2.0 |
 | ros-jazzy-nav2-costmap-2d | 1.3.13-1noble.20260921.024946 | BSD-3-Clause and Apache-2.0 |
-| ros-jazzy-nav2-msgs | (transitive, same stack) | Apache-2.0 |
-| ros-jazzy-nav2-lifecycle-manager | (transitive, same stack) | Apache-2.0 |
+| ros-jazzy-nav2-msgs | 1.3.13-1noble.20260921.023049 | Apache-2.0 |
+| ros-jazzy-nav2-lifecycle-manager | 1.3.13-1noble.20260921.025008 | Apache-2.0 |
 | nav2_util (via above debs) | 1.3.13 | Apache-2.0 and BSD-3-Clause |
 | nav2_core (via above debs) | 1.3.13 | Apache-2.0 |
 
@@ -29,19 +29,30 @@ Unmodified third-party Nav2 binaries are used only in CI launch test B (Navfn an
 
 ### Other ROS 2 packages used directly
 
-Licences: ROS 2 core and most message or launch packages are Apache-2.0 unless package.xml states otherwise. Versions follow the pinned `ros:jazzy-ros-base` image plus CI apt installs; examples from the 2026-11-11 `apt-versions` artifact include:
+Versions are from the CI `apt-versions` artifact on **2026-11-11** (`dpkg-query -W` in the pinned `ros:jazzy-ros-base` container after Nav2 debs install). Licences follow each package's `package.xml` on the Jazzy distro (typically Apache-2.0 for messages and launch packages).
 
-- rclpy, sensor_msgs, nav_msgs, geometry_msgs, action_msgs, std_msgs: distro packages in the image
-- launch, launch_ros: distro packages in the image
-- launch_testing **3.4.12**, launch_pytest **3.4.12** (ros-jazzy-launch-testing / ros-jazzy-launch-pytest)
-- launch_testing_ros **0.26.13** (via launch test dependencies)
-- tf2_ros (static_transform_publisher): distro package in the image
-- ament_copyright, ament_index_python: build or test tooling in the ROS job
+| Debian package | Version | Licence (package.xml, Jazzy) |
+| --- | --- | --- |
+| ros-jazzy-rclpy | 7.1.12-1noble.20260912.162354 | Apache-2.0 |
+| ros-jazzy-sensor-msgs | 5.3.8-1noble.20260911.140426 | Apache-2.0 |
+| ros-jazzy-nav-msgs | 5.3.8-1noble.20260911.110342 | Apache-2.0 |
+| ros-jazzy-geometry-msgs | 5.3.8-1noble.20260911.102920 | Apache-2.0 |
+| ros-jazzy-action-msgs | 2.0.4-1noble.20260911.052334 | Apache-2.0 |
+| ros-jazzy-std-msgs | 5.3.8-1noble.20260911.094424 | Apache-2.0 |
+| ros-jazzy-launch | 3.4.12-1noble.20260920.232232 | Apache-2.0 |
+| ros-jazzy-launch-ros | 0.26.13-1noble.20260920.233704 | Apache-2.0 |
+| ros-jazzy-launch-testing | 3.4.12-1noble.20260920.233733 | Apache-2.0 |
+| ros-jazzy-launch-pytest | 3.4.12-1noble.20260920.233937 | Apache-2.0 |
+| ros-jazzy-launch-testing-ros | 0.26.13-1noble.20260920.234129 | Apache-2.0 |
+| ros-jazzy-tf2-ros | 0.36.23-1noble.20260915.173839 | BSD-3-Clause |
+| ros-jazzy-ament-copyright | 0.17.5-1noble.20260410.105859 | Apache-2.0 |
+| ros-jazzy-ament-index-python | 1.8.4-1noble.20260519.010916 | Apache-2.0 |
+| python3-colcon-core | 0.21.3+upstream-1 | Apache-2.0 |
 
 ## Build and CI
 
 - Base image `ros:jazzy-ros-base` index digest `sha256:8eed0a4669bbf43ee331878a4c39bd8ebddea8e3312a58b4fae8edb14526b617` (official Docker Hub image; image licence terms apply to the image layers)
-- colcon: installed in the pinned ROS container for `depth_occupancy_nav_ros`
+- colcon-core (python3-colcon-core **0.21.3+upstream-1**): Apache-2.0
 - get-pip.py from https://bootstrap.pypa.io/ (bootstrap installs **pip 26.3**, MIT)
 
 ## Dev and test (Python)
@@ -50,7 +61,7 @@ Licences: ROS 2 core and most message or launch packages are Apache-2.0 unless p
 - ruff 0.17.4: MIT
 - pip-tools / pip-compile (requirements.txt header): BSD-3-Clause
 - setuptools build backend (`pyproject.toml`): MIT
-- Hash-pinned transitive packages in `requirements.txt`: iniconfig 2.3.1 (MIT), packaging 26.3 (Apache-2.0 or BSD per PyPI), pluggy 1.7.0 (MIT), pygments 2.21.0 (BSD-2-Clause)
+- Hash-pinned transitive packages in `requirements.txt`: iniconfig 2.3.1 (MIT), packaging 26.3 (Apache-2.0 OR BSD-2-Clause per upstream LICENSE), pluggy 1.7.0 (MIT), pygments 2.21.0 (BSD-2-Clause)
 
 ## Dev and test (Node / web)
 

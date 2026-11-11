@@ -90,15 +90,7 @@ class DepthOccupancyNode(Node):
     def _on_depth(self, msg: Image) -> None:
         if not self._camera_ok or self._camera_info is None:
             return
-        if msg.header.frame_id != self._camera_info.header.frame_id:
-            return
-        if msg.width != self._camera_info.width or msg.height != self._camera_info.height:
-            self.get_logger().warn(
-                "Rejected depth Image (size mismatch with CameraInfo)",
-                throttle_duration_sec=2.0,
-            )
-            return
-        if not depth_image_format_valid(msg):
+        if not depth_message_acceptable(msg, self._camera_info):
             self.get_logger().warn("Rejected depth Image", throttle_duration_sec=2.0)
             return
 
@@ -156,6 +148,17 @@ def main() -> None:
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
+
+def depth_message_acceptable(msg: Image, ci: CameraInfo) -> bool:
+    """Return True iff depth Image matches CameraInfo and locked 32FC1 contract."""
+    if msg.header.frame_id != ci.header.frame_id:
+        return False
+    if msg.width != ci.width or msg.height != ci.height:
+        return False
+    if not depth_image_format_valid(msg):
+        return False
+    return depth_payload_size_valid(msg)
 
 
 def depth_image_format_valid(msg: Image) -> bool:

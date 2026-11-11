@@ -28,5 +28,16 @@ docker run --rm --init --platform linux/amd64 \
     set +u
     . install/setup.bash
     set -u
-    python3 -m pytest -q
+    export DO_REQUIRE_ROS=1
+    collected=\$(python3 -m pytest --collect-only -q 2>/dev/null | sed -n 's/.*collected \\([0-9][0-9]*\\).*/\\1/p' | tail -1)
+    if [ -z \"\$collected\" ] || [ \"\$collected\" -lt 37 ]; then
+      echo \"expected at least 37 ROS tests collected, got \${collected:-0}\"
+      exit 1
+    fi
+    out=\$(python3 -m pytest -q -rs 2>&1) || { echo \"\$out\"; exit 1; }
+    echo \"\$out\"
+    if echo \"\$out\" | grep -qE '[1-9][0-9]* skipped'; then
+      echo \"unexpected pytest skips\"
+      exit 1
+    fi
   "

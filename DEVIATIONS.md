@@ -17,9 +17,11 @@ CI installs and asserts exact noble Debian builds (**Navigation2 1.3.13** upstre
 
 Rosdistro `jazzy/distribution.yaml` still lists the navigation2 release as **1.3.14-1**; the main apt repo at the pin date served the 1.3.13 builds above. See PLAN Amendment 1 (2026-11-11).
 
-## Height-filter mutant counts (criterion 10)
+## Launch test B negative goal error codes (criterion 15)
 
-Launch test B negative Navfn goals (Nav2 1.3.13): shadow `(5.50, 0.00)` and face `(2.75, 0.00)` both return `error_code` **208** (`NO_VALID_PATH`), not **206**.
+On Nav2 **1.3.13**, `nav2_navfn_planner/src/navfn_planner.cpp` (tag 1.3.13, about line 155) throws `GoalOccupied` (**206**) only when `tolerance_ == 0` and the goal cell is lethal. With `tolerance: 0.05` in `planner_server.yaml`, the face goal `(2.75, 0.00)` falls through to `makePlan`, which fails and returns `NoValidPathCouldBeFound` (**208**). Shadow `(5.50, 0.00)` also returns **208**. Launch test B asserts both negative goals yield **208**.
+
+## Height-filter mutant counts (criterion 10)
 
 The PLAN's **117 / 1208** occupied and free counts came from the throwaway prototype and could not be reproduced with the locked Amanatides-Woo walk. The measured values at this commit are **78 / 1247 / 3080 / 395**. Mid **395** matches the PLAN. The behavioural assertions are unchanged (around path `None`, open path exists, start and open goal free; ground-only cells `(28, 30)`, `(29, 30)`, `(30, 30)` are 100).
 

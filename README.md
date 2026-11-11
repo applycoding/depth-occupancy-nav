@@ -62,7 +62,7 @@ RMSE **0.0364728080413652** (asserted with tolerance `1e-9`). Occupancy: **41** 
 
 CI runs Navfn on the published `/map` with a static-only global costmap (`allow_unknown: false`).
 
-The **around goal** `(5.50, -1.50)` is reachable on the unobstructed octile-optimal path through free cells beside the obstacle. Evidence that Navfn respects **lethal** and **unknown** cells comes from the **global costmap** probes before planning and from **negative goals** (shadow at `(5.50, 0.00)` and face at `(2.75, 0.00)`), not from the around path alone.
+The **around goal** `(5.50, -1.50)` is reachable on the unobstructed octile-optimal path through free cells beside the obstacle. Evidence that Navfn respects **lethal** and **unknown** cells comes from the **global costmap** probes before planning and from **negative goals** (shadow at `(5.50, 0.00)` and face at `(2.75, 0.00)`), not from the around path alone. With `tolerance: 0.05`, both negative goals return Navfn error code **208** (`NO_VALID_PATH`), not **206** (`GOAL_OCCUPIED`); see `DEVIATIONS.md`.
 
 Nav2 apt pin (2026-11-11): `ros-jazzy-nav2-navfn-planner` **1.3.13-1noble.20260921.031752**, `ros-jazzy-nav2-planner` **1.3.13-1noble.20260921.031801**, `ros-jazzy-nav2-costmap-2d` **1.3.13-1noble.20260921.024946**. Rosdistro lists 1.3.14-1; noble apt served 1.3.13. See DEVIATIONS.md and PLAN Amendment 1.
 
