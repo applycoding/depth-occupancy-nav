@@ -15,14 +15,17 @@ CO_AUTHORED = re.compile(r"(?im)^co-authored-by:")
 TRAILER_BASE = "5fcad2927246fa08150c0db116438e3c9f20a0d3"
 
 
-def _commit_body(sha: str) -> str:
-    return subprocess.check_output(["git", "show", "-s", "--format=%B", sha], text=True)
+def _commit_body(sha: str, *, cwd: Path | None = None) -> str:
+    return subprocess.check_output(
+        ["git", "show", "-s", "--format=%B", sha], text=True, cwd=cwd
+    )
 
 
-def _commit_meta(sha: str) -> tuple[str, str, str, str]:
+def _commit_meta(sha: str, *, cwd: Path | None = None) -> tuple[str, str, str, str]:
     raw = subprocess.check_output(
         ["git", "show", "-s", "--format=%an%x00%ae%x00%cn%x00%ce", sha],
         text=True,
+        cwd=cwd,
     )
     parts = raw.rstrip("\n").split("\0")
     if len(parts) != 4:
@@ -30,13 +33,13 @@ def _commit_meta(sha: str) -> tuple[str, str, str, str]:
     return parts[0], parts[1], parts[2], parts[3]
 
 
-def check_commit(sha: str, *, check_trailers: bool) -> None:
-    an, ae, cn, ce = _commit_meta(sha)
+def check_commit(sha: str, *, check_trailers: bool, cwd: Path | None = None) -> None:
+    an, ae, cn, ce = _commit_meta(sha, cwd=cwd)
     if an != AUTHOR_NAME or ae != AUTHOR_EMAIL:
         raise SystemExit(f"bad author on {sha}: {an!r} {ae!r}")
     if cn != AUTHOR_NAME or ce != AUTHOR_EMAIL:
         raise SystemExit(f"bad committer on {sha}: {cn!r} {ce!r}")
-    body = _commit_body(sha)
+    body = _commit_body(sha, cwd=cwd)
     if check_trailers and CO_AUTHORED.search(body):
         raise SystemExit(f"co-authored trailer on {sha}")
     try:
@@ -79,28 +82,24 @@ def self_test() -> None:
             check=True,
             env=env,
         )
-        good = rev_list("HEAD")[0]
-        check_commit(good, check_trailers=True)
+        good = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+        ).strip()
+        check_commit(good, check_trailers=True, cwd=repo)
 
         (repo / "f").write_text("y\n", encoding="utf-8")
         subprocess.run(["git", "add", "f"], cwd=repo, check=True)
-        bad_msg = "bad trailer\n\n" + "Co-authored" + "-by: x <x@y.com>"
-        subprocess.run(
-            [
-                "git",
-                "commit",
-                "-qm",
-                bad_msg,
-                "--author",
-                f"{AUTHOR_NAME} <{AUTHOR_EMAIL}>",
-            ],
+        tree = subprocess.check_output(["git", "write-tree"], cwd=repo, text=True).strip()
+        bad_trailer = subprocess.check_output(
+            ["git", "commit-tree", tree, "-p", good],
             cwd=repo,
-            check=True,
-            env=env,
-        )
-        bad_trailer = rev_list("HEAD")[0]
+            input="bad trailer\n\nCo-authored-by: x <x@y.com>\n",
+            text=True,
+            env={**env, "GIT_COMMITTER_NAME": AUTHOR_NAME, "GIT_COMMITTER_EMAIL": AUTHOR_EMAIL},
+        ).strip()
+        subprocess.run(["git", "reset", "--hard", bad_trailer], cwd=repo, check=True)
         try:
-            check_commit(bad_trailer, check_trailers=True)
+            check_commit(bad_trailer, check_trailers=True, cwd=repo)
         except SystemExit:
             pass
         else:
@@ -114,9 +113,11 @@ def self_test() -> None:
             check=True,
             env={**env, "GIT_COMMITTER_NAME": "Other", "GIT_COMMITTER_EMAIL": "o@e.com"},
         )
-        bad_committer = rev_list("HEAD")[0]
+        bad_committer = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=repo, text=True
+        ).strip()
         try:
-            check_commit(bad_committer, check_trailers=True)
+            check_commit(bad_committer, check_trailers=True, cwd=repo)
         except SystemExit:
             pass
         else:

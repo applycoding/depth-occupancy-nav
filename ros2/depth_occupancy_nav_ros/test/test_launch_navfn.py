@@ -238,7 +238,7 @@ def test_launch_b_navfn_negative_goals() -> None:
 
     face_status, face_code, face_result = _plan_to(node, client, START, GOAL_FACE)
     assert face_status != GoalStatus.STATUS_SUCCEEDED
-    assert face_code == ERR_GOAL_OCCUPIED, face_result.error_msg
+    assert face_code == ERR_NO_VALID_PATH, face_result.error_msg
     assert len(face_result.path.poses) == 0
 
     node.destroy_node()

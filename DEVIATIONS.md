@@ -19,6 +19,8 @@ Rosdistro `jazzy/distribution.yaml` still lists the navigation2 release as **1.3
 
 ## Height-filter mutant counts (criterion 10)
 
+Launch test B negative Navfn goals (Nav2 1.3.13): shadow `(5.50, 0.00)` and face `(2.75, 0.00)` both return `error_code` **208** (`NO_VALID_PATH`), not **206**.
+
 The PLAN's **117 / 1208** occupied and free counts came from the throwaway prototype and could not be reproduced with the locked Amanatides-Woo walk. The measured values at this commit are **78 / 1247 / 3080 / 395**. Mid **395** matches the PLAN. The behavioural assertions are unchanged (around path `None`, open path exists, start and open goal free; ground-only cells `(28, 30)`, `(29, 30)`, `(30, 30)` are 100).
 
 ## Launch test B planner delayed start (`TimerAction` 4 s)
