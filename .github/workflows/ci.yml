@@ -144,8 +144,8 @@ jobs:
           sudo apt-get update -qq
           mkdir -p ros-debs
           sudo apt-get install -y -qq --download-only \
-            ros-jazzy-nav2-navfn-planner=1.3.14-1 \
-            ros-jazzy-nav2-planner=1.3.14-1 \
+            ros-jazzy-nav2-navfn-planner \
+            ros-jazzy-nav2-planner \
             ros-jazzy-nav2-costmap-2d \
             ros-jazzy-nav2-lifecycle-manager \
             ros-jazzy-nav2-msgs \
@@ -166,8 +166,8 @@ jobs:
               dpkg -i /ws/ros-debs/*.deb || apt-get -f install -y -qq
               NAVFN_VER=$(dpkg-query -W ros-jazzy-nav2-navfn-planner | awk '{print $2}')
               PLANNER_VER=$(dpkg-query -W ros-jazzy-nav2-planner | awk '{print $2}')
-              test "$NAVFN_VER" = "1.3.14-1"
-              test "$PLANNER_VER" = "1.3.14-1"
+              case "$NAVFN_VER" in 1.3.13-1*) ;; *) echo "unexpected navfn $NAVFN_VER"; exit 1;; esac
+              case "$PLANNER_VER" in 1.3.13-1*) ;; *) echo "unexpected planner $PLANNER_VER"; exit 1;; esac
               dpkg-query -W > /ws/apt-versions.txt
               python3 -m ensurepip --upgrade
               python3 -m pip install -q --break-system-packages pip setuptools wheel

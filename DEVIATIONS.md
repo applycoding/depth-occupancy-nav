@@ -1,5 +1,9 @@
 # Deviations
 
+## Nav2 apt version on ROS 2 Jazzy (criterion 15)
+
+PLAN.md pins **1.3.14-1** for `ros-jazzy-nav2-navfn-planner` and `ros-jazzy-nav2-planner`. On `ubuntu-24.04` with `packages.ros.org` ros2 noble (CI run 43063183621, 2026-11-11), `apt-get install ...=1.3.14-1` fails with “version not found”. Installed packages are **1.3.13** builds (example: `1.3.13-1noble.20260921.031752`). CI asserts `dpkg-query` versions start with `1.3.13-1` and uploads the full `dpkg-query -W` log.
+
 ## Height-filter mutant occupied count (criterion 10)
 
 Two-pass occupancy with every valid depth treated as an occupied endpoint yields **78** cells at value 100 and **395** mid cells on the locked scene (measured 2026-11-11 in this tree). PLAN.md section 9 prototype values are **117** occupied and **395** mid with **1208** free.

@@ -20,4 +20,4 @@
 
 ## navigation2 (apt)
 
-- ros-jazzy-navigation2 / nav2 packages: **1.3.14-1** (assert exact on `ros-jazzy-nav2-navfn-planner` and `ros-jazzy-nav2-planner`).
+ROS apt on noble (measured CI 2026-11-11): `ros-jazzy-nav2-navfn-planner` and `ros-jazzy-nav2-planner` Debian versions begin with **1.3.13-1** (upstream Navigation2 1.3.13). PLAN.md still lists 1.3.14-1 from the 2026-11-11 rosdistro check; see `DEVIATIONS.md`.
