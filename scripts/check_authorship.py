@@ -90,10 +90,11 @@ def self_test() -> None:
         (repo / "f").write_text("y\n", encoding="utf-8")
         subprocess.run(["git", "add", "f"], cwd=repo, check=True)
         tree = subprocess.check_output(["git", "write-tree"], cwd=repo, text=True).strip()
+        trailer_line = "Co-authored" + "-by: x <x@y.com>"
         bad_trailer = subprocess.check_output(
             ["git", "commit-tree", tree, "-p", good],
             cwd=repo,
-            input="bad trailer\n\nCo-authored-by: x <x@y.com>\n",
+            input=f"bad trailer\n\n{trailer_line}\n",
             text=True,
             env={**env, "GIT_COMMITTER_NAME": AUTHOR_NAME, "GIT_COMMITTER_EMAIL": AUTHOR_EMAIL},
         ).strip()
