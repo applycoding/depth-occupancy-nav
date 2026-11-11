@@ -177,8 +177,9 @@ jobs:
               case "$PLANNER_VER" in 1.3.13-1*) ;; *) echo "unexpected planner $PLANNER_VER"; exit 1;; esac
               dpkg-query -W > /ws/apt-versions.txt
               python3 /ws/get-pip.py --break-system-packages
-              python3 -m pip install -q --break-system-packages --no-index -f /ws/wheelhouse -r /ws/requirements.txt
-              python3 -m pip install -q --break-system-packages --no-index -f /ws/wheelhouse -e /ws
+              python3 -m pip install -q --break-system-packages --no-index -f /ws/wheelhouse \
+                --ignore-installed numpy==2.5.4 pillow==13.0.0
+              export PYTHONPATH="/ws/src:${PYTHONPATH:-}"
               cd /ws/ros2/depth_occupancy_nav_ros
               colcon build --packages-select depth_occupancy_nav_ros
               . install/setup.bash
