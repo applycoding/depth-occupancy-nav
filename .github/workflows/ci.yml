@@ -127,7 +127,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Build ROS CI image
         run: |
-          docker build --platform linux/amd64 \
+          docker build --network=host --platform linux/amd64 \
             -f docker/ros_ci.Dockerfile \
             -t depth-occupancy-nav-ros-ci:local \
             .
