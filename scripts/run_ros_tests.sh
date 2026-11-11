@@ -32,8 +32,8 @@ docker run --rm --init --platform linux/amd64 \
     collect_out=\$(python3 -m pytest --collect-only -q 2>&1) || { echo \"\$collect_out\"; exit 1; }
     echo \"\$collect_out\"
     collected=\$(echo \"\$collect_out\" | grep ' tests collected' | tail -1 | sed -n 's/^\\([0-9][0-9]*\\) tests collected.*/\\1/p')
-    if [ -z \"\$collected\" ] || [ \"\$collected\" -lt 37 ]; then
-      echo \"expected at least 37 ROS tests collected, got \${collected:-0}\"
+    if [ -z \"\$collected\" ] || [ \"\$collected\" -lt 42 ]; then
+      echo \"expected at least 42 ROS tests collected, got \${collected:-0}\"
       exit 1
     fi
     out=\$(python3 -m pytest -q -rs 2>&1) || { echo \"\$out\"; exit 1; }

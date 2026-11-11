@@ -100,6 +100,9 @@ def test_rejects_width_mismatch_with_ci() -> None:
     img = _valid_depth_image()
     ci = _valid_ci()
     img.width = W - 1
+    img.step = (W - 1) * 4
+    img.data = np.zeros((H, W - 1), dtype=np.float32).tobytes(order="C")
+    assert depth_image_format_valid(img) and depth_payload_size_valid(img)
     assert not depth_message_acceptable(img, ci)
 
 
@@ -107,8 +110,9 @@ def test_rejects_height_mismatch_with_ci() -> None:
     img = _valid_depth_image()
     ci = _valid_ci()
     img.height = H - 1
-    img.step = (H - 1) * 4
+    img.step = W * 4
     img.data = np.zeros((H - 1, W), dtype=np.float32).tobytes(order="C")
+    assert depth_image_format_valid(img) and depth_payload_size_valid(img)
     assert not depth_message_acceptable(img, ci)
 
 
