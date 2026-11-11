@@ -182,7 +182,9 @@ jobs:
               export PYTHONPATH="/ws/src:${PYTHONPATH:-}"
               cd /ws/ros2/depth_occupancy_nav_ros
               colcon build --packages-select depth_occupancy_nav_ros
+              set +u
               . install/setup.bash
+              set -u
               python3 -m pytest -q
             '
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
