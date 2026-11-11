@@ -31,7 +31,7 @@ docker run --rm --init --platform linux/amd64 \
     export DO_REQUIRE_ROS=1
     collect_out=\$(python3 -m pytest --collect-only -q 2>&1) || { echo \"\$collect_out\"; exit 1; }
     echo \"\$collect_out\"
-    collected=\$(echo \"\$collect_out\" | sed -n 's/.*\\([0-9][0-9]*\\) tests collected.*/\\1/p' | tail -1)
+    collected=\$(echo \"\$collect_out\" | grep ' tests collected' | tail -1 | sed -n 's/^\\([0-9][0-9]*\\) tests collected.*/\\1/p')
     if [ -z \"\$collected\" ] || [ \"\$collected\" -lt 37 ]; then
       echo \"expected at least 37 ROS tests collected, got \${collected:-0}\"
       exit 1
