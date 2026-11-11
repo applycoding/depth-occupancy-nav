@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # Build tasks: depth-occupancy-nav
 
 Do the tasks in order, on a feature branch, following PLAN.md exactly. Deviate only if a pin or a test proves a step broken. If you do, record the reason and the measured data in `DEVIATIONS.md` and amend the plan before merge. **Never weaken a threshold, gate or mutant expectation to make CI green, and never make a red job green by writing `DEVIATIONS.md` alone.** If a gate fails, fix the implementation.

@@ -1,3 +1,4 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
 # depth-occupancy-nav: plan
 
 Date: 2026-11-11. Author: Arpan Bom. Licence: Apache-2.0. Status: decision-complete. Numeric gates were measured on a throwaway prototype of the locked scene on 2026-11-11. Versions and licence files were checked on the same date (PyPI, npm, Docker Hub, rosdistro, and upstream LICENSE files). See "Verification record".
@@ -309,7 +310,7 @@ Face cell `(37, 30)` log-odds is clamped at `l_max = 3.5`.
 
 **9. Noise, seed 1, using the locked draw schedule in section 5.3.** All 2434 originally valid pixels remain valid (dropped 0). RMSE = 0.0364728080413652; assert `abs(rmse - 0.0364728080413652) < 1e-9`. If a future NumPy PCG change breaks that tight value, record it in `DEVIATIONS.md` and keep the bound `0.033 <= rmse <= 0.040` together with the theoretical RMSE 0.0363097701532491. Noisy occupancy: occupied 41, free 1684, unknown 3062, mid 13 (13 = 4800 - 41 - 1684 - 3062, from the measured three counts and the fixed grid size). The around path still exists, length 51, cost `35 + 15*sqrt(2)`. Two calls with seed 1 in one process produce bit-identical noisy images. Two noise-free renders are bit-identical, and two occupancy arrays from that depth are equal.
 
-**10. Height-filter mutant.** Occupied 117, free 1208, unknown 3080, mid 395 (117 + 1208 + 3080 + 395 = 4800). The mid count was measured on the same throwaway prototype as the other three counts, after the review note that those three do not exhaust the grid. Around path is None. Open path still exists. Start and the open goal remain free.
+**10. Height-filter mutant.** **Measured gates** (see **PLAN Amendment 1 (2026-11-11)**): occupied **78**, free **1247**, unknown **3080**, mid **395** (78 + 1247 + 3080 + 395 = 4800). The original throwaway prototype recorded **117 / 1208 / 3080 / 395**; the occupied and free counts could not be reproduced with the locked Amanatides-Woo walk. Around path is None. Open path still exists. Start and the open goal remain free. Ground-only cells `(28, 30)`, `(29, 30)`, `(30, 30)` are 100.
 
 **11. Pillow PNG round trip.** Encode the locked-scene depth as a 16-bit unsigned PNG in millimetres (`round(z * 1000)` with half-even rounding, 0 invalid) and decode it. Every originally valid pixel recovers camera-Z within 0.5 mm. Invalid pixels remain 0.
 
@@ -344,4 +345,29 @@ Every action is pinned by SHA with the version in a comment.
 
 ## 11. Verification record
 
-On 2026-11-11 a throwaway prototype of the locked scene measured the renderer counts, the 22 occupied cells, the planner paths and costs, the inflation count 130, the seed-1 RMSE 0.0364728080413652 under the locked draw schedule, the noisy occupancy 41 / 1684 / 3062 / mid 13, the height-filter mutant 117 / 1208 / 3080 / mid 395, the exact 28-cell walk, the optical-axis and four-pixel back-projections, and both one-pass mutant schedules (M1: 0 / 1709 / 3080 / 11; M2: 0 / 1714 / 3080 / 6; value 0 at `(37, 30)`). Versions and licence files were checked the same day against PyPI, npm, Node release index, Docker Hub / registry-1.docker.io, rosdistro, and upstream LICENSE or package.xml files (NumPy, pytest, ruff, Pillow, Nav2 packages, OctoMap idea-only licence, Apache-2.0 text SHA-256). Official opencv-python wheels were rejected because they ship LGPLv2.1 FFmpeg. The OctoMap paper is cited from the official project site and the author PDF `https://www.arminhornung.de/Research/pub/hornung13auro.pdf` (DOI 10.1007/s10514-012-9321-0); an earlier arXiv identifier was checked only by HTTP status and was the wrong paper, and has been dropped.
+On 2026-11-11 a throwaway prototype of the locked scene measured the renderer counts, the 22 occupied cells, the planner paths and costs, the inflation count 130, the seed-1 RMSE 0.0364728080413652 under the locked draw schedule, the noisy occupancy 41 / 1684 / 3062 / mid 13, the height-filter mutant prototype literals 117 / 1208 / 3080 / mid 395 (superseded for CI by PLAN Amendment 1), the exact 28-cell walk, the optical-axis and four-pixel back-projections, and both one-pass mutant schedules (M1: 0 / 1709 / 3080 / 11; M2: 0 / 1714 / 3080 / 6; value 0 at `(37, 30)`). Versions and licence files were checked the same day against PyPI, npm, Node release index, Docker Hub / registry-1.docker.io, rosdistro, and upstream LICENSE or package.xml files (NumPy, pytest, ruff, Pillow, Nav2 packages, OctoMap idea-only licence, Apache-2.0 text SHA-256). Official opencv-python wheels were rejected because they ship LGPLv2.1 FFmpeg. The OctoMap paper is cited from the official project site and the author PDF `https://www.arminhornung.de/Research/pub/hornung13auro.pdf` (DOI 10.1007/s10514-012-9321-0); an earlier arXiv identifier was checked only by HTTP status and was the wrong paper, and has been dropped.
+
+## PLAN Amendment 1 (2026-11-11)
+
+This amendment records measured pins and layout changes that differ from the 2026-11-11 decision-complete PLAN text above. Merge gates use these values where they conflict with section 9 literals.
+
+### Nav2 apt (criterion 15)
+
+- **Upstream:** Navigation2 **1.3.13** (not the rosdistro-indexed **1.3.14-1** at the pin date).
+- **Exact noble Debian versions** (CI `env` and `dpkg-query` equality): `ros-jazzy-nav2-navfn-planner` **1.3.13-1noble.20260921.031752**; `ros-jazzy-nav2-planner` **1.3.13-1noble.20260921.031801**; `ros-jazzy-nav2-costmap-2d` **1.3.13-1noble.20260921.024946**.
+- **Evidence:** `apt-get install ...=1.3.14-1` on noble returns `E: Version '1.3.14-1' for 'ros-jazzy-nav2-navfn-planner' was not found` (2026-11-11). See `DEVIATIONS.md`.
+
+### Height-filter mutant (criterion 10)
+
+- **CI counts:** occupied **78**, free **1247**, unknown **3080**, mid **395** (production path with height gate disabled, or equivalent `height_mutant` mode).
+- **Prototype literals** 117 / 1208 are not reproduced with the locked walk; mid **395** matches the PLAN prototype.
+
+### Launch test B readiness
+
+- The published map and **global_costmap/costmap** are asserted before goals (80x60, resolution 0.10, origin (-1.0, -3.0), lethal at `(2.75, 0.00)`, unknown at `(2.95, 0.00)`, free at `(5.50, -1.50)`). Negative goals exercise shadow and face cells.
+- **`TimerAction` (4 s)** before `planner_server` and the lifecycle manager remains for reliability; see `DEVIATIONS.md`.
+
+### Pages and CI artifacts (criterion 17)
+
+- **`web` job:** artifact `web-dist` uploads only `web/dist` (includes `report.json` from `scripts/write_report.py`). Artifact `demo-screenshot` uploads `docs/demo.png` separately.
+- **`pages` job:** downloads `web-dist` to `dist`, verifies `dist/index.html` and `dist/report.json`, and passes `path: dist` to `upload-pages-artifact` (not `dist/dist`).

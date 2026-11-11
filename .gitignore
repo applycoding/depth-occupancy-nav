@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+web/node_modules/
+web/dist/
+web/public/report.json
+web/test-results/
+apt-versions.txt
+ros-debs/
+wheelhouse/
+get-pip.py

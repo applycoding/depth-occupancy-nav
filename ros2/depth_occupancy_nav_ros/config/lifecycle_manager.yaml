@@ -1,0 +1,11 @@
+# Copyright 2026 Arpan Bom
+
+# Licensed under the Apache License, Version 2.0
+# SPDX-License-Identifier: Apache-2.0
+lifecycle_manager_navigation:
+  ros__parameters:
+    use_sim_time: false
+    autostart: true
+    bond_timeout: 4.0
+    attempt_respawn_reconnection: false
+    node_names: ["planner_server"]
