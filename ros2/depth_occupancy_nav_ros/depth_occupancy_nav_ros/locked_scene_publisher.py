@@ -1,3 +1,4 @@
+# Copyright 2026 Arpan Bom
 # SPDX-License-Identifier: Apache-2.0
 """Publish noise-free locked-scene depth and CameraInfo for launch tests."""
 

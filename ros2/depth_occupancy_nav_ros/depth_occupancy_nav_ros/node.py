@@ -1,3 +1,4 @@
+# Copyright 2026 Arpan Bom
 # SPDX-License-Identifier: Apache-2.0
 """Subscribe to 32FC1 depth + CameraInfo; publish nav_msgs/OccupancyGrid on /map."""
 

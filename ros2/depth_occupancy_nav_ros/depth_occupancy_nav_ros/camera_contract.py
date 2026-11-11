@@ -1,3 +1,4 @@
+# Copyright 2026 Arpan Bom
 # SPDX-License-Identifier: Apache-2.0
 """Validate sensor_msgs/CameraInfo against the locked synthetic camera."""
 

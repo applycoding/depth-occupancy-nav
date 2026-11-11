@@ -1,3 +1,4 @@
+# Copyright 2026 Arpan Bom
 # SPDX-License-Identifier: Apache-2.0
 """Static transforms for locked map / base_link / camera_optical_frame."""
 
